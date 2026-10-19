@@ -65,6 +65,17 @@ def test_manifest_records_each_raw_file(settings, month):
     assert file["fetched_at"].endswith("+00:00")
 
 
+def test_snapshot_writes_an_lf_manifest_and_zstd_parquet(settings, month):
+    snapshot(Jar(), settings, month)
+    manifest = (settings.root / "jar.json").read_bytes()
+    assert b"\r\n" not in manifest
+    assert manifest.endswith(b"}\n")
+    compression = duckdb.sql(
+        f"SELECT DISTINCT compression FROM parquet_metadata('{settings.root / 'jar.parquet'}')"
+    )
+    assert compression.fetchall() == [("ZSTD",)]
+
+
 def test_snapshot_fails_when_a_source_column_disappears(settings, month):
     raw = settings.raw_dir("jar", month) / jar.FILE_NAME
     raw.write_text(raw.read_text(encoding="utf-8").replace("stat_kodas", "statusas"), "utf-8")

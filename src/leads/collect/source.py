@@ -53,10 +53,14 @@ class Source(ABC):
         """Yield the pulled fields of ``files``, selected by column name."""
 
     def snapshot(self, con: duckdb.DuckDBPyConnection, files: list[RawFile], out_dir: Path) -> int:
-        """Write ``<name>.parquet`` and its manifest ``<name>.json``; return the row count."""
+        """Write ``<name>.parquet`` and its manifest ``<name>.json``; return the row count.
+
+        Parquet is compressed with ZSTD, about two thirds of the default's size. The manifest
+        has LF line ends, so its bytes are the same on every platform.
+        """
         parquet = out_dir / f"{self.name}.parquet"
         with self.rows(con, files) as rows:
-            rows.write_parquet(str(parquet))
+            rows.write_parquet(str(parquet), compression="zstd")
         count, period = con.sql(
             f"SELECT count(*), max({self.period_column})::VARCHAR FROM read_parquet(?)",
             params=[str(parquet)],
@@ -67,5 +71,6 @@ class Source(ABC):
             "period": period,
             "files": [file.lineage() for file in files],
         }
-        (out_dir / f"{self.name}.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
+        text = json.dumps(manifest, indent=2) + "\n"
+        (out_dir / f"{self.name}.json").write_text(text, encoding="utf-8", newline="\n")
         return count
