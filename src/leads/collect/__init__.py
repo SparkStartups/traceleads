@@ -11,11 +11,12 @@ from leads.collect.fetch import Fetcher
 from leads.collect.jar import Jar
 from leads.collect.sodra import Sodra
 from leads.collect.source import Source
+from leads.collect.vmi_taxes import VmiTaxes
 from leads.config import MONTH_FORMAT, Settings, current_month
 
 log = logging.getLogger(__name__)
 
-SOURCES: tuple[Source, ...] = (Jar(), Sodra())
+SOURCES: tuple[Source, ...] = (Jar(), Sodra(), VmiTaxes())
 
 
 def collect_month(settings: Settings, month: date) -> None:

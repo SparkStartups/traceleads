@@ -1,5 +1,6 @@
 """HTTP downloads with retries and a check that each response is the file asked for."""
 
+import json
 import logging
 import time
 from collections.abc import Iterable
@@ -11,6 +12,7 @@ from curl_cffi import requests
 log = logging.getLogger(__name__)
 
 USER_AGENT = "leads (VMI lead-list research prototype)"
+JSON_ACCEPT = {"Accept": "application/json"}  # a browser's Accept gets HTML from data.gov.lt
 TIMEOUT_SECONDS = 300
 ATTEMPTS = 4
 BACKOFF_SECONDS = 2.0
@@ -44,12 +46,18 @@ class Fetcher:
         self._session.close()
 
     def get(self, url: str) -> bytes:
+        return self._request(url, headers=None)
+
+    def get_json(self, url: str) -> dict:
+        return _parse_json(url, self._request(url, headers=JSON_ACCEPT))
+
+    def _request(self, url: str, *, headers: dict[str, str] | None) -> bytes:
         """Return the body of ``url``, retrying rate limits, server errors and lost connections."""
         if self.offline:
             raise FetchError(f"{url}: not downloaded, and only the current month can be fetched")
         for attempt in range(1, ATTEMPTS + 1):
             try:
-                response = self._session.request("GET", url)
+                response = self._session.request("GET", url, headers=headers)
             except requests.RequestsError as exc:
                 problem = f"{url}: {exc}"
             else:
@@ -87,6 +95,13 @@ def _require(signature: bytes, content: bytes, source: str) -> None:
         raise FetchError(
             f"{source}: expected {signature!r} at the start, got {content[:SNIPPET]!r}"
         )
+
+
+def _parse_json(url: str, content: bytes) -> dict:
+    try:
+        return json.loads(content)
+    except json.JSONDecodeError as exc:
+        raise FetchError(f"{url}: expected JSON, got {content[:SNIPPET]!r}") from exc
 
 
 def write_atomic(path: Path, chunks: Iterable[bytes]) -> None:

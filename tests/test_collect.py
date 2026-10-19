@@ -10,7 +10,14 @@ from leads.collect.fetch import FetchError
 from leads.collect.jar import FILE_NAME
 from leads.config import Settings, current_month
 
-SNAPSHOT_FILES = ["jar.json", "jar.parquet", "sodra.json", "sodra.parquet"]
+SNAPSHOT_FILES = [
+    "jar.json",
+    "jar.parquet",
+    "sodra.json",
+    "sodra.parquet",
+    "vmi_taxes.json",
+    "vmi_taxes.parquet",
+]
 
 
 @pytest.fixture
@@ -48,10 +55,11 @@ def test_current_month_downloads_every_source(project_root, raw_sources, session
     session.reply(raw.jar_csv())
     for content in raw.sodra_years().values():
         session.reply(content)
+    session.reply(json.dumps({"_data": raw.vmi_rows()}).encode())
 
     collect_month(Settings(project_root), month)
 
-    assert len(session.requests) == 1 + len(raw.sodra_years())
+    assert len(session.requests) == 1 + len(raw.sodra_years()) + 1
     snapshot_dir = Settings(project_root).snapshot_dir(month)
     assert sorted(path.name for path in snapshot_dir.iterdir()) == SNAPSHOT_FILES
 

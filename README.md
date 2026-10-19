@@ -32,8 +32,13 @@ are added at the end.
 Only the fields the system uses are kept.
 
 Individual enterprises (IĮ) are one person's business, and their names are often the owner's
-name. The snapshot keeps only the trade name in quotes, and the published list leaves out an IĮ's
-registered address.
+name. The register already hides them. From VMI the snapshot keeps only the last quoted part of a
+payer's name, the trade name, and drops it when it holds an owner's name: an initial and a name
+("V. Petraičio įmonė"), or a first name and a surname in the genitive ("Onos Petraitienės
+kavinė"). In October 2026, of 8,270 IĮ payers, 5,422 have no quoted part and keep no name, 137
+lose theirs as an owner's name and 2,711 keep a trade name. An IĮ without one is never linked to a
+place automatically: only the building rule, which sends a place to review, can find it. The
+published list leaves out an IĮ's registered address.
 
 ## Collecting a month
 
@@ -56,6 +61,7 @@ uses, and a manifest per source with each raw file's URL, SHA-256 and download t
 |---|---|---|
 | Register of Legal Entities (`jar`) | the bulk CSV of registered entities | code, name, address, registration date, legal form, status, file date |
 | Sodra (`sodra`) | the zipped monthly CSV of each year that holds Sodra's latest three months | company code, month, insured people, activity code |
+| VMI taxes paid (`vmi_taxes`) | this year to date and the two years before, from the data.gov.lt API, page by page | company code, trade name, year, months covered, amount, update date |
 
 ## How it works
 

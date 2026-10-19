@@ -32,7 +32,7 @@ def test_get_returns_the_body(session):
     session.reply(b"data")
     with Fetcher(offline=False) as fetcher:
         assert fetcher.get(URL) == b"data"
-    assert session.requests == [("GET", URL)]
+    assert session.requests == [("GET", URL, None)]
 
 
 @pytest.mark.parametrize(
@@ -81,6 +81,22 @@ def test_an_error_outside_the_request_is_not_retried(session):
     with Fetcher(offline=False) as fetcher, pytest.raises(ValueError):
         fetcher.get(URL)
     assert (len(session.requests), session.waits) == (1, [])
+
+
+def test_get_json_asks_for_json(session):
+    session.reply(b'{"rows": 1}')
+    with Fetcher(offline=False) as fetcher:
+        assert fetcher.get_json(URL) == {"rows": 1}
+    assert session.requests == [("GET", URL, {"Accept": "application/json"})]
+
+
+def test_get_json_rejects_a_web_page(session):
+    session.reply(WEB_PAGE)
+    with (
+        Fetcher(offline=False) as fetcher,
+        pytest.raises(FetchError, match=re.escape(f"expected JSON, got {WEB_PAGE!r}")),
+    ):
+        fetcher.get_json(URL)
 
 
 def test_offline_fetcher_never_sends_a_request(session):

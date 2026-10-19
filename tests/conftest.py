@@ -1,4 +1,5 @@
 import io
+import json
 import os
 import shutil
 import zipfile
@@ -6,12 +7,13 @@ from collections.abc import Callable, Generator
 from dataclasses import dataclass, field
 from datetime import date
 from pathlib import Path
+from typing import NamedTuple
 
 import pytest
 
 from leads import tracking
 from leads import warehouse as warehouse_module
-from leads.collect import fetch, jar, sodra
+from leads.collect import fetch, jar, sodra, vmi_taxes
 from leads.config import Settings
 from leads.tracking import Run
 from leads.warehouse import META_SQL, Warehouse
@@ -81,12 +83,40 @@ class RawSources:
             files[year] = _zip(f"monthly-{year}.csv", "\n".join(lines) + "\n")
         return files
 
+    def vmi_rows(self) -> list[dict]:
+        """Return a closed year, this year's stale and latest rows, IĮ and a foreign payer."""
+        year = self.month.year
+
+        def row(code: int | None, name: str, tax_year: int, months: int, amount: float) -> dict:
+            company = {"ja_kodas": code} if code else None
+            return {
+                "mm_kodas": company,
+                "pavadinimas": name,
+                "metai": tax_year,
+                "menuo": months,
+                "suma": amount,
+                "atnaujinta": "2026-10-08",
+            }
+
+        return [
+            row(304000001, 'UAB "Kavos namai"', year - 1, 12, 15000.5),
+            row(304000001, 'UAB "Kavos namai"', year, 8, 9000.0),
+            row(304000001, 'UAB "Kavos namai"', year, 9, 10000.25),
+            row(304000003, "Jono Jonaičio IĮ", year - 1, 12, 81.94),
+            row(304000004, "Onos Onaitės IĮ „Saulės kepykla“", year - 1, 12, 4210.0),
+            row(304000005, 'IĮ "A. Petraičio firma "Ratai"', year - 1, 12, 3100.0),
+            row(304000006, 'IĮ "V. Petraičio įmonė"', year - 1, 12, 950.0),
+            row(None, "TGW LIMITED", year - 1, 12, 135653.74),
+        ]
+
     def write(self, settings: Settings) -> None:
         """Put the files in the month's raw folders, as a finished download leaves them."""
         _write(settings.raw_dir("jar", self.month) / jar.FILE_NAME, self.jar_csv())
         for year, content in self.sodra_years().items():
             path = settings.raw_dir("sodra", self.month) / sodra.FILE_NAME.format(year=year)
             _write(path, content)
+        lines = "".join(json.dumps(row, ensure_ascii=False) + "\n" for row in self.vmi_rows())
+        _write(settings.raw_dir("vmi_taxes", self.month) / vmi_taxes.FILE_NAME, lines.encode())
 
 
 def _zip(name: str, text: str) -> bytes:
@@ -107,12 +137,18 @@ class FakeResponse:
     content: bytes
 
 
+class SentRequest(NamedTuple):
+    method: str
+    url: str
+    headers: dict[str, str] | None
+
+
 @dataclass
 class FakeSession:
     """Stands in for the curl_cffi session: answers each request with the next queued reply."""
 
     options: dict = field(default_factory=dict)
-    requests: list[tuple[str, str]] = field(default_factory=list)  # (method, url)
+    requests: list[SentRequest] = field(default_factory=list)
     replies: list[FakeResponse | Exception] = field(default_factory=list)
     waits: list[float] = field(default_factory=list)  # between retries, recorded instead of slept
     closed: bool = False
@@ -123,8 +159,8 @@ class FakeSession:
     def fail(self, error: Exception) -> None:
         self.replies.append(error)
 
-    def request(self, method: str, url: str) -> FakeResponse:
-        self.requests.append((method, url))
+    def request(self, method: str, url: str, headers: dict[str, str] | None) -> FakeResponse:
+        self.requests.append(SentRequest(method, url, headers))
         reply = self.replies.pop(0)
         if isinstance(reply, Exception):
             raise reply

@@ -5,10 +5,12 @@ from datetime import date
 import duckdb
 import pytest
 
-from leads.collect import jar
+from leads.collect import jar, vmi_taxes
 from leads.collect.fetch import Fetcher, FetchError
 from leads.collect.jar import Jar
 from leads.collect.sodra import Sodra, header_codes, months_before
+from leads.collect.source import RawFile
+from leads.collect.vmi_taxes import VmiTaxes
 from leads.config import Settings
 
 ZIP = b"PK\x03\x04zip"
@@ -116,7 +118,7 @@ def test_sodra_fetches_the_years_of_its_latest_three_months(session, tmp_path, m
         session.reply(ZIP)
     with Fetcher(offline=False) as fetcher:
         files = Sodra().fetch(fetcher, tmp_path, month)
-    assert [url for _, url in session.requests] == [
+    assert [request.url for request in session.requests] == [
         f"https://atvira.sodra.lt/imones/downloads/{year}/monthly-{year}.csv.zip" for year in years
     ]
     assert [file.path.name for file in files] == [f"monthly-{year}.csv.zip" for year in years]
@@ -128,3 +130,74 @@ def test_sodra_fetches_the_years_of_its_latest_three_months(session, tmp_path, m
 )
 def test_months_before_crosses_the_year(month, count, expected):
     assert months_before(month, count) == expected
+
+
+def test_vmi_taxes_saves_every_page_of_three_years(session, tmp_path, month):
+    session.reply(json.dumps({"_data": [{"metai": 2025}], "_page": {"next": "abc="}}).encode())
+    session.reply(json.dumps({"_data": [{"metai": 2026}], "_page": {}}).encode())
+    with Fetcher(offline=False) as fetcher:
+        (file,) = VmiTaxes().fetch(fetcher, tmp_path, month)
+    first, second = (request.url for request in session.requests)
+    assert first.endswith(
+        "?select(_page,mm_kodas.ja_kodas,pavadinimas,metai,menuo,suma,atnaujinta)"
+        "&metai>=2024&limit(20000)"
+    )
+    assert second == first + '&page("abc=")'
+    assert file.url == first
+    lines = file.path.read_text(encoding="utf-8").splitlines()
+    assert lines == ['{"metai": 2025}', '{"metai": 2026}']
+
+
+def test_vmi_taxes_reuses_the_saved_file(session, tmp_path, month):
+    (tmp_path / vmi_taxes.FILE_NAME).write_text("{}\n", encoding="utf-8")
+    with Fetcher(offline=True) as fetcher:
+        VmiTaxes().fetch(fetcher, tmp_path, month)
+    assert session.requests == []
+
+
+def test_vmi_taxes_snapshot_keeps_only_trade_names(settings, month):
+    columns, rows, manifest = snapshot(VmiTaxes(), settings, month)
+    assert columns == ["ja_kodas", "trade_name", "metai", "menuo", "suma", "atnaujinta"]
+    updated = date(2026, 10, 8)
+    assert rows == [
+        (304000001, "Kavos namai", 2025, 12, 15000.5, updated),
+        (304000001, "Kavos namai", 2026, 8, 9000.0, updated),
+        (304000001, "Kavos namai", 2026, 9, 10000.25, updated),
+        (304000003, None, 2025, 12, 81.94, updated),  # named after its owner only
+        (304000004, "Saulės kepykla", 2025, 12, 4210.0, updated),
+        (304000005, "Ratai", 2025, 12, 3100.0, updated),  # the last of nested quotes
+        (304000006, None, 2025, 12, 950.0, updated),  # a trade name with an initial and a name
+        (None, None, 2025, 12, 135653.74, updated),  # a foreign payer, without a company code
+    ]
+    assert (manifest["rows"], manifest["period"]) == (8, "2026-10-08")
+
+
+@pytest.mark.parametrize(
+    ("name", "trade_name"),
+    [
+        ('UAB "Kavos namai"', "Kavos namai"),
+        ("Onos Onaitės IĮ „Saulės kepykla“", "Saulės kepykla"),
+        ('IĮ "A. Petraičio firma "Ratai"', "Ratai"),  # nested quotes: the last part
+        ('UAB "AB Sistemos"', "AB Sistemos"),
+        ("Jono Jonaičio IĮ", None),
+        ('IĮ "V. Petraičio įmonė"', None),
+        ('IĮ "V.Jonaičio įmonė"', None),
+        ('IĮ "Optika O. Onaitės"', None),
+        ('IĮ "Onos Petraitienės kavinė"', None),
+        ('IĮ "Jono Jonaičio autoservisas"', None),
+        ('IĮ "Petro Kazlausko dirbtuvė"', None),
+        ('IĮ "Dariaus Jankevičiaus įmonė"', None),
+        ('IĮ "RASOS ONAITĖS ĮMONĖ"', None),
+        ('IĮ "JONO PETRAIČIO ĮMONĖ"', None),
+        ('IĮ "ONOS PETRAITIENĖS KIRPYKLA"', None),
+        ('IĮ "MANO GĖLĖS"', "MANO GĖLĖS"),  # in capitals, common endings are not a name
+        ('IĮ "Senamiesčio kepykla"', "Senamiesčio kepykla"),
+    ],
+)
+def test_vmi_taxes_keeps_a_trade_name_without_an_owner_s_name(tmp_path, name, trade_name):
+    raw = tmp_path / vmi_taxes.FILE_NAME
+    payer = {"mm_kodas": None, "pavadinimas": name, "metai": 2025, "menuo": 12, "suma": 1.0}
+    raw.write_text(json.dumps(payer | {"atnaujinta": "2026-10-08"}) + "\n", encoding="utf-8")
+    files = [RawFile("https://example.lt", raw)]
+    with duckdb.connect() as con, VmiTaxes().rows(con, files) as rows:
+        assert rows.select("trade_name").fetchall() == [(trade_name,)]
