@@ -17,7 +17,7 @@ TIMEOUT_SECONDS = 300
 ATTEMPTS = 4
 BACKOFF_SECONDS = 2.0
 RETRY_STATUSES = frozenset({429, 500, 502, 503, 504})
-SNIPPET = 80  # bytes of a wrong answer quoted in its error
+SNIPPET_BYTES = 80  # of a wrong answer, quoted in its error
 
 
 class FetchError(Exception):
@@ -86,7 +86,7 @@ class Fetcher:
         """
         if target.exists():
             with target.open("rb") as file:
-                _require(signature, file.read(SNIPPET), f"{target} (replace it)")
+                _require(signature, file.read(SNIPPET_BYTES), f"{target} (replace it)")
             return target
         try:
             content = self.get(url)
@@ -100,7 +100,7 @@ class Fetcher:
 def _require(signature: bytes, content: bytes, source: str) -> None:
     if not content.startswith(signature):
         raise FetchError(
-            f"{source}: expected {signature!r} at the start, got {content[:SNIPPET]!r}"
+            f"{source}: expected {signature!r} at the start, got {content[:SNIPPET_BYTES]!r}"
         )
 
 
@@ -108,7 +108,7 @@ def _parse_json(url: str, content: bytes) -> dict:
     try:
         return json.loads(content)
     except json.JSONDecodeError as exc:
-        raise FetchError(f"{url}: expected JSON, got {content[:SNIPPET]!r}") from exc
+        raise FetchError(f"{url}: expected JSON, got {content[:SNIPPET_BYTES]!r}") from exc
 
 
 def write_atomic(path: Path, chunks: Iterable[bytes]) -> None:

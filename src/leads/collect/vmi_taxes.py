@@ -38,21 +38,21 @@ SURNAME_ENDINGS = ("ės", "os", "io", "iaus", "ausko", "insko", "cko", "ovo", "e
 SURNAME_ENDINGS_IN_CAPITALS = ("ienės", "aitės", "ytės", "ūtės", "aičio", "avičiaus", "evičiaus")
 
 
-def _any(endings: tuple[str, ...]) -> str:
+def _one_of(endings: tuple[str, ...]) -> str:
     return f"({'|'.join(endings)})"
 
 
 OWNER_NAME = "|".join(
     (
         r"(^|[\s.])\p{Lu}\.\s?\p{L}{2,}",
-        rf"(^|\s)\p{{Lu}}\p{{Ll}}+{_any(FIRST_NAME_ENDINGS)}\s+"
-        rf"\p{{Lu}}\p{{Ll}}+{_any(SURNAME_ENDINGS)}(\s|$|[,.])",
-        rf"(^|\s)\p{{Lu}}+{_any(FIRST_NAME_ENDINGS).upper()}\s+"
-        rf"\p{{Lu}}+{_any(SURNAME_ENDINGS_IN_CAPITALS).upper()}(\s|$|[,.])",
+        rf"(^|\s)\p{{Lu}}\p{{Ll}}+{_one_of(FIRST_NAME_ENDINGS)}\s+"
+        rf"\p{{Lu}}\p{{Ll}}+{_one_of(SURNAME_ENDINGS)}(\s|$|[,.])",
+        rf"(^|\s)\p{{Lu}}+{_one_of(FIRST_NAME_ENDINGS).upper()}\s+"
+        rf"\p{{Lu}}+{_one_of(SURNAME_ENDINGS_IN_CAPITALS).upper()}(\s|$|[,.])",
     )
 )
 
-_URL_SAFE = '=&()",.>'
+URL_SAFE = '=&()",.>'
 
 
 class VmiTaxes(Source):
@@ -70,7 +70,7 @@ class VmiTaxes(Source):
             write_atomic(
                 path, (json.dumps(r, ensure_ascii=False).encode() + b"\n" for r in records)
             )
-        return [RawFile(f"{URL}?{quote(query, safe=_URL_SAFE)}", path)]
+        return [RawFile(f"{URL}?{quote(query, safe=URL_SAFE)}", path)]
 
     @contextmanager
     def rows(
@@ -107,7 +107,7 @@ def _pages(fetcher: Fetcher, query: str) -> Iterator[dict]:
     token = None
     while True:
         page = f'&page("{token}")' if token else ""
-        data = fetcher.get_json(f"{URL}?{quote(query + page, safe=_URL_SAFE)}")
+        data = fetcher.get_json(f"{URL}?{quote(query + page, safe=URL_SAFE)}")
         yield from data["_data"]
         token = data.get("_page", {}).get("next")
         if not token:

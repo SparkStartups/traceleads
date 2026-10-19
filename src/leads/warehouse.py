@@ -3,6 +3,7 @@
 import time
 from collections.abc import Generator
 from contextlib import contextmanager
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Self
 
@@ -22,12 +23,12 @@ class PublishError(Exception):
     """Raised when a finished build cannot replace a published file."""
 
 
+@dataclass(frozen=True)
 class Warehouse:
     """A DuckDB connection paired with the directory of SQL models it runs."""
 
-    def __init__(self, con: duckdb.DuckDBPyConnection, sql_dir: Path) -> None:
-        self.con = con
-        self.sql_dir = sql_dir
+    con: duckdb.DuckDBPyConnection
+    sql_dir: Path
 
     @classmethod
     @contextmanager

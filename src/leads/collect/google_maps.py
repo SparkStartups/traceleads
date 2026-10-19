@@ -46,7 +46,7 @@ COLUMNS = {
 }
 CLOSED = ("Visam laikui uždaryta", "Laikinai uždaryta")  # "uždaryta" alone is only "closed now"
 NO_REVIEWS = "Nėra peržiūrų"  # shown instead of the rating when a place has no reviews
-SNIPPET = 120  # characters of a card or link quoted when it fails to parse
+SNIPPET_CHARS = 120  # of a card or link, quoted when it fails to parse
 
 _PLACE_ID = re.compile(r"!1s0x[0-9a-f]+:(0x[0-9a-f]+)")  # the second half is the place's CID
 _COORDINATES = re.compile(r"!3d(-?[0-9.]+)!4d(-?[0-9.]+)")
@@ -96,12 +96,12 @@ QUERIES = tuple(
 )
 
 
+@dataclass
 class Renderer:
     """Renders pages through Oxylabs' Web API, at most ``RENDER_CAP`` times in one run."""
 
-    def __init__(self, fetcher: Fetcher) -> None:
-        self.fetcher = fetcher
-        self.renders = 0
+    fetcher: Fetcher
+    renders: int = 0
 
     def render(self, url: str) -> str:
         """Return the page at ``url`` once its JavaScript ran; a render can come back without."""
@@ -109,11 +109,11 @@ class Renderer:
         if not key and not self.fetcher.offline:  # offline, the fetcher says why it cannot render
             raise FetchError(f"{url}: set {API_KEY_VARIABLE} (see .env.example) to render it")
         payload = {"url": url, "run_js": True, "output": ["html"]}
+        headers = {"Authorization": f"Bearer {key}"}
         for attempt in range(1, RENDER_ATTEMPTS + 1):
             if self.renders == RENDER_CAP:
                 raise FetchError(f"{url}: the {RENDER_CAP} renders allowed in one run are spent")
             self.renders += 1
-            headers = {"Authorization": f"Bearer {key}"}
             html = self.fetcher.post_json(OXYLABS_URL, payload, headers)["results"][0]["html"]
             if RENDERED in html:
                 return html
@@ -176,7 +176,7 @@ def parse_cards(html: str) -> list[Card]:
     for article in LexborHTMLParser(html).css('div[role="feed"] div[role="article"]'):
         link = article.css_first("a.hfpxzc[href][aria-label]")
         if link is None:
-            raise ValueError(f"no place link in card {article.text()[:SNIPPET]!r}")
+            raise ValueError(f"no place link in card {article.text()[:SNIPPET_CHARS]!r}")
         href = link.attributes["href"]
         cid = int(_find(_PLACE_ID, href)[1], 16)
         if cid in cards:
@@ -199,7 +199,7 @@ def parse_cards(html: str) -> list[Card]:
 def _find(pattern: re.Pattern[str], text: str) -> re.Match[str]:
     match = pattern.search(text)
     if match is None:
-        raise ValueError(f"no {pattern.pattern!r} in {text[:SNIPPET]!r}")
+        raise ValueError(f"no {pattern.pattern!r} in {text[:SNIPPET_CHARS]!r}")
     return match
 
 
@@ -209,7 +209,7 @@ def _review_count(article: LexborNode) -> int:
         if NO_REVIEWS in article.text():
             return 0
         raise ValueError(
-            f"neither a review count nor {NO_REVIEWS!r} in {article.text()[:SNIPPET]!r}"
+            f"neither a review count nor {NO_REVIEWS!r} in {article.text()[:SNIPPET_CHARS]!r}"
         )
     return int(re.sub(r"\D", "", _find(_REVIEWS, rating.attributes["aria-label"])[1]))
 
@@ -218,7 +218,7 @@ def _category_and_address(article: LexborNode) -> tuple[str | None, str | None]:
     """Return the category and address from the line "category · accessibility icon · address"."""
     line = article.css_first("div.W4Efsd > div.W4Efsd")
     if line is None:
-        raise ValueError(f"no detail line in card {article.text()[:SNIPPET]!r}")
+        raise ValueError(f"no detail line in card {article.text()[:SNIPPET_CHARS]!r}")
     parts = [text for node in line.iter() if node.tag == "span" and (text := _visible_text(node))]
     if len(parts) == 1 and _ADDRESS.search(parts[0]):  # a place without a category
         return None, parts[0]
