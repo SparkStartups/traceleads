@@ -1,6 +1,7 @@
 import os
 import shutil
 from collections.abc import Callable, Generator
+from dataclasses import dataclass, field
 from datetime import date
 from pathlib import Path
 
@@ -8,11 +9,59 @@ import pytest
 
 from leads import tracking
 from leads import warehouse as warehouse_module
+from leads.collect import fetch
 from leads.config import Settings
 from leads.tracking import Run
 from leads.warehouse import META_SQL, Warehouse
 
 REPO_SQL_DIR = Path(__file__).resolve().parents[1] / "sql"
+
+
+@dataclass(frozen=True)
+class FakeResponse:
+    status_code: int
+    content: bytes
+
+
+@dataclass
+class FakeSession:
+    """Stands in for the curl_cffi session: answers each request with the next queued reply."""
+
+    options: dict = field(default_factory=dict)
+    requests: list[tuple[str, str]] = field(default_factory=list)  # (method, url)
+    replies: list[FakeResponse | Exception] = field(default_factory=list)
+    waits: list[float] = field(default_factory=list)  # between retries, recorded instead of slept
+    closed: bool = False
+
+    def reply(self, content: bytes = b"", status: int = 200) -> None:
+        self.replies.append(FakeResponse(status, content))
+
+    def fail(self, error: Exception) -> None:
+        self.replies.append(error)
+
+    def request(self, method: str, url: str) -> FakeResponse:
+        self.requests.append((method, url))
+        reply = self.replies.pop(0)
+        if isinstance(reply, Exception):
+            raise reply
+        return reply
+
+    def close(self) -> None:
+        self.closed = True
+
+
+@pytest.fixture
+def session(monkeypatch: pytest.MonkeyPatch) -> FakeSession:
+    """Replace the HTTP session of every fetcher, and the waits between its retries."""
+    fake = FakeSession()
+
+    def make(**options: object) -> FakeSession:
+        fake.options = options
+        return fake
+
+    monkeypatch.setattr(fetch.requests, "Session", make)
+    monkeypatch.setattr(fetch.time, "sleep", fake.waits.append)
+    return fake
 
 
 @pytest.fixture(autouse=True)
