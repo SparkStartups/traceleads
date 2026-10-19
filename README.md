@@ -119,6 +119,19 @@ precision.
 - **Runs and checks:** each build and its check results.
 - **SQL console:** the analyst's own questions on a read-only connection, with saved queries.
 
+## Run it
+
+Requires Docker with Compose v2.
+
+```bash
+docker compose up
+```
+
+This builds the image and runs `leads build`, which rebuilds the warehouse from
+`data/snapshots/` into `warehouse/leads.duckdb`. With no month in `data/snapshots/` it stops,
+reports that there is no snapshot and exits with code 1. Runs in Docker record their commit as
+`unknown`: the image holds no git history.
+
 ## Develop and test
 
 Requires [uv](https://docs.astral.sh/uv/).

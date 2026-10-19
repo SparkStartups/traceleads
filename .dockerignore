@@ -1,0 +1,7 @@
+# The image needs only the package and its SQL; data, the warehouse, .env and caches stay out.
+*
+!pyproject.toml
+!uv.lock
+!src/
+!sql/
+**/__pycache__
