@@ -114,6 +114,18 @@ precision.
 - **Runs and checks:** each build and its check results.
 - **SQL console:** the analyst's own questions on a read-only connection, with saved queries.
 
+## Develop and test
+
+Requires [uv](https://docs.astral.sh/uv/).
+
+```bash
+make test     # run the tests
+make lint     # check the lock file, lint and formatting
+make format   # apply lint fixes and formatting
+```
+
+CI runs `make lint test` on every push.
+
 ## Layout
 
 ```
