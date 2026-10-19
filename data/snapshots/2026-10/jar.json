@@ -1,0 +1,13 @@
+{
+  "source": "jar",
+  "rows": 235418,
+  "period": "2026-10-16",
+  "files": [
+    {
+      "file": "JAR_IREGISTRUOTI.csv",
+      "url": "https://www.registrucentras.lt/aduomenys/?byla=JAR_IREGISTRUOTI.csv",
+      "sha256": "62974668236108967f7c43972a9cae0f106493746c730f2bf6b718919ef5335e",
+      "fetched_at": "2026-10-17T11:39:54.779072+00:00"
+    }
+  ]
+}

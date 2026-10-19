@@ -1,0 +1,511 @@
+{
+  "source": "google_maps",
+  "rows": 1069,
+  "period": "2026-10-17",
+  "files": [
+    {
+      "file": "kavine-antakalnis-vilnius.html",
+      "url": "https://www.google.com/maps/search/kavin%C4%97%20Antakalnis%20Vilnius?hl=lt",
+      "sha256": "4dda5c53a3ba163d56af1e0e0526dc7e2f6788575ace0384be33cc27f5863f28",
+      "fetched_at": "2026-10-17T15:24:49.773834+00:00"
+    },
+    {
+      "file": "kavine-fabijoniskes-vilnius.html",
+      "url": "https://www.google.com/maps/search/kavin%C4%97%20Fabijoni%C5%A1k%C4%97s%20Vilnius?hl=lt",
+      "sha256": "a7bfba26f808abac9ef7bff7fcc7640e41c16fd21f368751db3e6a8dc451c0ca",
+      "fetched_at": "2026-10-17T15:25:02.540581+00:00"
+    },
+    {
+      "file": "kavine-grigiskes-vilnius.html",
+      "url": "https://www.google.com/maps/search/kavin%C4%97%20Grigi%C5%A1k%C4%97s%20Vilnius?hl=lt",
+      "sha256": "27a81f2d1bc2e7d1dbb670c4d0bb6d8a238c027e6282674548fdd81d38e7f114",
+      "fetched_at": "2026-10-17T15:25:13.027975+00:00"
+    },
+    {
+      "file": "kavine-justiniskes-vilnius.html",
+      "url": "https://www.google.com/maps/search/kavin%C4%97%20Justini%C5%A1k%C4%97s%20Vilnius?hl=lt",
+      "sha256": "3785d7feb96db320b0b7210d25b5e11859733e2548a8d8e05de64b79623d9585",
+      "fetched_at": "2026-10-17T15:25:30.291527+00:00"
+    },
+    {
+      "file": "kavine-karoliniskes-vilnius.html",
+      "url": "https://www.google.com/maps/search/kavin%C4%97%20Karolini%C5%A1k%C4%97s%20Vilnius?hl=lt",
+      "sha256": "95117fcc6935b8c17ce60703db6c720aecd0485b1e4925b001a32b033bdb9532",
+      "fetched_at": "2026-10-17T15:25:45.111444+00:00"
+    },
+    {
+      "file": "kavine-lazdynai-vilnius.html",
+      "url": "https://www.google.com/maps/search/kavin%C4%97%20Lazdynai%20Vilnius?hl=lt",
+      "sha256": "b3fc48382c4d99d95c341bc690ccbf0313ac80ea24e101f4095117e0dba7bfa5",
+      "fetched_at": "2026-10-17T15:25:59.067938+00:00"
+    },
+    {
+      "file": "kavine-naujamiestis-vilnius.html",
+      "url": "https://www.google.com/maps/search/kavin%C4%97%20Naujamiestis%20Vilnius?hl=lt",
+      "sha256": "e9ec2f7b7af4bc3d217d7e67b85b9a8b5af71a014114b8c22286bc8896284d44",
+      "fetched_at": "2026-10-17T15:26:30.324171+00:00"
+    },
+    {
+      "file": "kavine-naujininkai-vilnius.html",
+      "url": "https://www.google.com/maps/search/kavin%C4%97%20Naujininkai%20Vilnius?hl=lt",
+      "sha256": "864e37c8f8cb47cd4b11b346ac4b3d8f0e9bf362586e3d126f74bab0ca3a8363",
+      "fetched_at": "2026-10-17T15:26:39.545011+00:00"
+    },
+    {
+      "file": "kavine-naujoji-vilnia-vilnius.html",
+      "url": "https://www.google.com/maps/search/kavin%C4%97%20Naujoji%20Vilnia%20Vilnius?hl=lt",
+      "sha256": "e95adc7d6de579aea9350408af6b292a4f6dcefaf95e14a499fd1872381b9a5e",
+      "fetched_at": "2026-10-17T15:26:58.185496+00:00"
+    },
+    {
+      "file": "kavine-paneriai-vilnius.html",
+      "url": "https://www.google.com/maps/search/kavin%C4%97%20Paneriai%20Vilnius?hl=lt",
+      "sha256": "2b10872a819928114c1e2dcbf6aec88c10f149ce05074b71aa564316df99834a",
+      "fetched_at": "2026-10-17T15:28:17.965842+00:00"
+    },
+    {
+      "file": "kavine-pasilaiciai-vilnius.html",
+      "url": "https://www.google.com/maps/search/kavin%C4%97%20Pa%C5%A1ilai%C4%8Diai%20Vilnius?hl=lt",
+      "sha256": "8c7a9d17fd8e2aace6a0fc7cd9046c55f428b678e5ada7c67066389d9dd2d835",
+      "fetched_at": "2026-10-17T15:28:42.704539+00:00"
+    },
+    {
+      "file": "kavine-pilaite-vilnius.html",
+      "url": "https://www.google.com/maps/search/kavin%C4%97%20Pilait%C4%97%20Vilnius?hl=lt",
+      "sha256": "35c3c72b5ba980522efaf4b7cb63a76b8d6a8a7f8b5eb946da2ff063ce3ea834",
+      "fetched_at": "2026-10-17T15:28:52.692800+00:00"
+    },
+    {
+      "file": "kavine-rasos-vilnius.html",
+      "url": "https://www.google.com/maps/search/kavin%C4%97%20Rasos%20Vilnius?hl=lt",
+      "sha256": "9309412110a2fa882714448a5603b74354bf166ff5c583830758901ef74b64ab",
+      "fetched_at": "2026-10-17T15:33:13.776276+00:00"
+    },
+    {
+      "file": "kavine-senamiestis-vilnius.html",
+      "url": "https://www.google.com/maps/search/kavin%C4%97%20Senamiestis%20Vilnius?hl=lt",
+      "sha256": "faaf6ce26dd871d8244d1ec6243163a10982648c39369ac7b062c89ff17b2058",
+      "fetched_at": "2026-10-17T15:33:30.441738+00:00"
+    },
+    {
+      "file": "kavine-seskine-vilnius.html",
+      "url": "https://www.google.com/maps/search/kavin%C4%97%20%C5%A0e%C5%A1kin%C4%97%20Vilnius?hl=lt",
+      "sha256": "62ef8b459331abb1c668531f709dd2df3f386605e777f7b8a465bb8102f8966d",
+      "fetched_at": "2026-10-17T15:33:44.005497+00:00"
+    },
+    {
+      "file": "kavine-snipiskes-vilnius.html",
+      "url": "https://www.google.com/maps/search/kavin%C4%97%20%C5%A0nipi%C5%A1k%C4%97s%20Vilnius?hl=lt",
+      "sha256": "a70938ae9dae9eaf51318a5d26869962d1bb36d850a99d6ab26f094c680a2f91",
+      "fetched_at": "2026-10-17T15:34:16.346785+00:00"
+    },
+    {
+      "file": "kavine-verkiai-vilnius.html",
+      "url": "https://www.google.com/maps/search/kavin%C4%97%20Verkiai%20Vilnius?hl=lt",
+      "sha256": "dcd5921d5ca294808fa9fc83438726ab54febf9253c38fffed4e3e9823ac25d6",
+      "fetched_at": "2026-10-17T15:34:46.898813+00:00"
+    },
+    {
+      "file": "kavine-vilkpede-vilnius.html",
+      "url": "https://www.google.com/maps/search/kavin%C4%97%20Vilkp%C4%97d%C4%97%20Vilnius?hl=lt",
+      "sha256": "8d7952b2a37dcbb31440a344fcdba540569e5d078d6c2dd6a86795671c611108",
+      "fetched_at": "2026-10-17T15:35:00.394867+00:00"
+    },
+    {
+      "file": "kavine-virsuliskes-vilnius.html",
+      "url": "https://www.google.com/maps/search/kavin%C4%97%20Vir%C5%A1uli%C5%A1k%C4%97s%20Vilnius?hl=lt",
+      "sha256": "9fe51159a0f57b9ab3d619bb2bd848822744e4268d796ce4ede72778163a781c",
+      "fetched_at": "2026-10-17T15:35:39.749106+00:00"
+    },
+    {
+      "file": "kavine-zirmunai-vilnius.html",
+      "url": "https://www.google.com/maps/search/kavin%C4%97%20%C5%BDirm%C5%ABnai%20Vilnius?hl=lt",
+      "sha256": "5715b23c5b3da3fb31e452f7166e63d6803114a7a497590f6f0b55d5645cbf3d",
+      "fetched_at": "2026-10-17T15:35:50.595747+00:00"
+    },
+    {
+      "file": "kavine-zverynas-vilnius.html",
+      "url": "https://www.google.com/maps/search/kavin%C4%97%20%C5%BDv%C4%97rynas%20Vilnius?hl=lt",
+      "sha256": "bbed7dee16f3aa8cd80bdf71ad18c048483ca362b8368803bd36de11fac0be73",
+      "fetched_at": "2026-10-17T15:36:06.414438+00:00"
+    },
+    {
+      "file": "kepykla-antakalnis-vilnius.html",
+      "url": "https://www.google.com/maps/search/kepykla%20Antakalnis%20Vilnius?hl=lt",
+      "sha256": "f8dc629b245fc44dcce9744eea908703aa33262fa71f2a35d11e4569d7bc9661",
+      "fetched_at": "2026-10-17T15:36:24.165594+00:00"
+    },
+    {
+      "file": "kepykla-fabijoniskes-vilnius.html",
+      "url": "https://www.google.com/maps/search/kepykla%20Fabijoni%C5%A1k%C4%97s%20Vilnius?hl=lt",
+      "sha256": "1fec38bf77ad6327f73300172b91bf2737924abd03294810d9f48e8f6839a1fb",
+      "fetched_at": "2026-10-17T15:36:37.699874+00:00"
+    },
+    {
+      "file": "kepykla-grigiskes-vilnius.html",
+      "url": "https://www.google.com/maps/search/kepykla%20Grigi%C5%A1k%C4%97s%20Vilnius?hl=lt",
+      "sha256": "e54259fcdb66b347b84b0aa8baf469ddf8322cc2db19abaf21536eab96d31f30",
+      "fetched_at": "2026-10-17T15:36:52.590907+00:00"
+    },
+    {
+      "file": "kepykla-justiniskes-vilnius.html",
+      "url": "https://www.google.com/maps/search/kepykla%20Justini%C5%A1k%C4%97s%20Vilnius?hl=lt",
+      "sha256": "67417ec7d6370efa14fe0fc46e338d7e4b3b3cb0e079a5d8f3fc60bec273eff8",
+      "fetched_at": "2026-10-17T15:37:23.144833+00:00"
+    },
+    {
+      "file": "kepykla-karoliniskes-vilnius.html",
+      "url": "https://www.google.com/maps/search/kepykla%20Karolini%C5%A1k%C4%97s%20Vilnius?hl=lt",
+      "sha256": "a86a04e97068b7a903cc262ee45fc1de7d90f920811b6fdda69065fb7bf7e443",
+      "fetched_at": "2026-10-17T15:37:42.025788+00:00"
+    },
+    {
+      "file": "kepykla-lazdynai-vilnius.html",
+      "url": "https://www.google.com/maps/search/kepykla%20Lazdynai%20Vilnius?hl=lt",
+      "sha256": "fb0cea623dc561be72a4afa8dfabe3b0836424fca1ff209466f0d4eea1e5c076",
+      "fetched_at": "2026-10-17T15:38:14.857705+00:00"
+    },
+    {
+      "file": "kepykla-naujamiestis-vilnius.html",
+      "url": "https://www.google.com/maps/search/kepykla%20Naujamiestis%20Vilnius?hl=lt",
+      "sha256": "0597e0769052968cca950258ca5566ec06346abfc14ad3d5c7ae2384877c1571",
+      "fetched_at": "2026-10-17T15:38:29.799351+00:00"
+    },
+    {
+      "file": "kepykla-naujininkai-vilnius.html",
+      "url": "https://www.google.com/maps/search/kepykla%20Naujininkai%20Vilnius?hl=lt",
+      "sha256": "e875c5b45b7b8f25e61cba0f3fcba60c1eb43cea1a6946b13877ada802215f23",
+      "fetched_at": "2026-10-17T15:38:53.606702+00:00"
+    },
+    {
+      "file": "kepykla-naujoji-vilnia-vilnius.html",
+      "url": "https://www.google.com/maps/search/kepykla%20Naujoji%20Vilnia%20Vilnius?hl=lt",
+      "sha256": "74f53dc76c8ebffb5b4b0afb2c9b2176fb054028ec75a51313f8e384c1db7706",
+      "fetched_at": "2026-10-17T15:39:46.384014+00:00"
+    },
+    {
+      "file": "kepykla-paneriai-vilnius.html",
+      "url": "https://www.google.com/maps/search/kepykla%20Paneriai%20Vilnius?hl=lt",
+      "sha256": "eb44c2e2bf5590a399814609bd32f2adb125aa459077e817c20d4f65d9d2569b",
+      "fetched_at": "2026-10-17T15:40:07.621613+00:00"
+    },
+    {
+      "file": "kepykla-pasilaiciai-vilnius.html",
+      "url": "https://www.google.com/maps/search/kepykla%20Pa%C5%A1ilai%C4%8Diai%20Vilnius?hl=lt",
+      "sha256": "e42dfa7395be15a9aa49350a2aeb20b167ed96aa40d0ce643e4278658d62e187",
+      "fetched_at": "2026-10-17T15:40:26.701027+00:00"
+    },
+    {
+      "file": "kepykla-pilaite-vilnius.html",
+      "url": "https://www.google.com/maps/search/kepykla%20Pilait%C4%97%20Vilnius?hl=lt",
+      "sha256": "169f66973ef1a1e302077f9eae612e167549122ef013837bc47af6e041942ef0",
+      "fetched_at": "2026-10-17T15:40:43.116090+00:00"
+    },
+    {
+      "file": "kepykla-rasos-vilnius.html",
+      "url": "https://www.google.com/maps/search/kepykla%20Rasos%20Vilnius?hl=lt",
+      "sha256": "7734cb058ccee1d1e10527a1e840cdd7f2022e7daaed503e0519553a97d35750",
+      "fetched_at": "2026-10-17T15:40:59.581818+00:00"
+    },
+    {
+      "file": "kepykla-senamiestis-vilnius.html",
+      "url": "https://www.google.com/maps/search/kepykla%20Senamiestis%20Vilnius?hl=lt",
+      "sha256": "ffd0eee254fb077a098a854f714bceb7e26aabf0291f2567cc5745f556eeae32",
+      "fetched_at": "2026-10-17T15:41:13.690704+00:00"
+    },
+    {
+      "file": "kepykla-seskine-vilnius.html",
+      "url": "https://www.google.com/maps/search/kepykla%20%C5%A0e%C5%A1kin%C4%97%20Vilnius?hl=lt",
+      "sha256": "70da9d659c7ef0448183f77fbe9c2077327db61facfb8eaa8b8731b874278ccc",
+      "fetched_at": "2026-10-17T15:41:33.703809+00:00"
+    },
+    {
+      "file": "kepykla-snipiskes-vilnius.html",
+      "url": "https://www.google.com/maps/search/kepykla%20%C5%A0nipi%C5%A1k%C4%97s%20Vilnius?hl=lt",
+      "sha256": "58a2a503e178f16fcf848c405e312ce81838b01f5bbc647f87bf8b9731e75616",
+      "fetched_at": "2026-10-17T15:41:49.157007+00:00"
+    },
+    {
+      "file": "kepykla-verkiai-vilnius.html",
+      "url": "https://www.google.com/maps/search/kepykla%20Verkiai%20Vilnius?hl=lt",
+      "sha256": "33ed5c49a80f21f640bb5567ce570cc83501c59766c84447dba5a730ee630660",
+      "fetched_at": "2026-10-17T15:42:00.748322+00:00"
+    },
+    {
+      "file": "kepykla-vilkpede-vilnius.html",
+      "url": "https://www.google.com/maps/search/kepykla%20Vilkp%C4%97d%C4%97%20Vilnius?hl=lt",
+      "sha256": "725423fcd82e2d9f1e4d5a26f1cdec5f77e90aec3214accd69adc2a1f667ffa9",
+      "fetched_at": "2026-10-17T15:42:29.575902+00:00"
+    },
+    {
+      "file": "kepykla-virsuliskes-vilnius.html",
+      "url": "https://www.google.com/maps/search/kepykla%20Vir%C5%A1uli%C5%A1k%C4%97s%20Vilnius?hl=lt",
+      "sha256": "6cd9b4e5c50175b62f554ad3c8dcf0c332a5d30a1ffb9693b0d0eca650996087",
+      "fetched_at": "2026-10-17T15:42:51.510484+00:00"
+    },
+    {
+      "file": "kepykla-zirmunai-vilnius.html",
+      "url": "https://www.google.com/maps/search/kepykla%20%C5%BDirm%C5%ABnai%20Vilnius?hl=lt",
+      "sha256": "0de0a24c477775163780272f9db7a36b26f4e85f6a4e794392da1b65afb8784e",
+      "fetched_at": "2026-10-17T15:43:03.188459+00:00"
+    },
+    {
+      "file": "kepykla-zverynas-vilnius.html",
+      "url": "https://www.google.com/maps/search/kepykla%20%C5%BDv%C4%97rynas%20Vilnius?hl=lt",
+      "sha256": "091948e93e6f7f5d421c2c85dc2d068b6169d0cb4b0f99e9f171ee115c294ee4",
+      "fetched_at": "2026-10-17T15:43:31.087429+00:00"
+    },
+    {
+      "file": "autoservisas-antakalnis-vilnius.html",
+      "url": "https://www.google.com/maps/search/autoservisas%20Antakalnis%20Vilnius?hl=lt",
+      "sha256": "5d945c4f78a9b006b76bdc09c1f3b3da685e57c6868aba526be26894c8dc72f8",
+      "fetched_at": "2026-10-17T15:44:38.730854+00:00"
+    },
+    {
+      "file": "autoservisas-fabijoniskes-vilnius.html",
+      "url": "https://www.google.com/maps/search/autoservisas%20Fabijoni%C5%A1k%C4%97s%20Vilnius?hl=lt",
+      "sha256": "84cc21f00d6a21ce6e36da7d92643bc30fd4802b6af5df85f311831d0dba0b35",
+      "fetched_at": "2026-10-17T15:45:12.009435+00:00"
+    },
+    {
+      "file": "autoservisas-grigiskes-vilnius.html",
+      "url": "https://www.google.com/maps/search/autoservisas%20Grigi%C5%A1k%C4%97s%20Vilnius?hl=lt",
+      "sha256": "0b09c9d7360001d976b3ff54e63973b683e4411fcd01372ec900713802056b16",
+      "fetched_at": "2026-10-17T15:45:29.276381+00:00"
+    },
+    {
+      "file": "autoservisas-justiniskes-vilnius.html",
+      "url": "https://www.google.com/maps/search/autoservisas%20Justini%C5%A1k%C4%97s%20Vilnius?hl=lt",
+      "sha256": "eed3102674780c7b27c6387a8de2bd012c3f7dcc4bf713e8d34e062835f691a2",
+      "fetched_at": "2026-10-17T15:45:45.363180+00:00"
+    },
+    {
+      "file": "autoservisas-karoliniskes-vilnius.html",
+      "url": "https://www.google.com/maps/search/autoservisas%20Karolini%C5%A1k%C4%97s%20Vilnius?hl=lt",
+      "sha256": "6486a65b9265a8d2d52f771c13d746c681a7454405bbeaef450da39ae56502cf",
+      "fetched_at": "2026-10-17T15:45:53.607344+00:00"
+    },
+    {
+      "file": "autoservisas-lazdynai-vilnius.html",
+      "url": "https://www.google.com/maps/search/autoservisas%20Lazdynai%20Vilnius?hl=lt",
+      "sha256": "adaae05bec9eab1c5309a5b73543fed4e120f83328beb1631515f3a4955ac6bf",
+      "fetched_at": "2026-10-17T15:46:10.548179+00:00"
+    },
+    {
+      "file": "autoservisas-naujamiestis-vilnius.html",
+      "url": "https://www.google.com/maps/search/autoservisas%20Naujamiestis%20Vilnius?hl=lt",
+      "sha256": "11b735718d7925da33f7f4ab26630659ad4550bfbf9294ffda1dc3c7ac22a182",
+      "fetched_at": "2026-10-17T15:46:33.490057+00:00"
+    },
+    {
+      "file": "autoservisas-naujininkai-vilnius.html",
+      "url": "https://www.google.com/maps/search/autoservisas%20Naujininkai%20Vilnius?hl=lt",
+      "sha256": "05b48f25b1c28562ac7215a132bd6df9ded14a91c6a72f3a6bd9aa13a55c3c01",
+      "fetched_at": "2026-10-17T15:47:08.916335+00:00"
+    },
+    {
+      "file": "autoservisas-naujoji-vilnia-vilnius.html",
+      "url": "https://www.google.com/maps/search/autoservisas%20Naujoji%20Vilnia%20Vilnius?hl=lt",
+      "sha256": "99f448fde0521adb14d0abde17bb3e5edc919c461470e839c394b5743bbf644d",
+      "fetched_at": "2026-10-17T15:47:21.384646+00:00"
+    },
+    {
+      "file": "autoservisas-paneriai-vilnius.html",
+      "url": "https://www.google.com/maps/search/autoservisas%20Paneriai%20Vilnius?hl=lt",
+      "sha256": "2f78a99a0221f0010e017e640818b070702c59ed2edd1c2e4ffe86caeae03509",
+      "fetched_at": "2026-10-17T15:47:45.684646+00:00"
+    },
+    {
+      "file": "autoservisas-pasilaiciai-vilnius.html",
+      "url": "https://www.google.com/maps/search/autoservisas%20Pa%C5%A1ilai%C4%8Diai%20Vilnius?hl=lt",
+      "sha256": "0aeda3d1b7ec9c722cfbc0a8a2a9802036e58af98dcbc56f9e86712c94a64ad7",
+      "fetched_at": "2026-10-17T15:48:06.639745+00:00"
+    },
+    {
+      "file": "autoservisas-pilaite-vilnius.html",
+      "url": "https://www.google.com/maps/search/autoservisas%20Pilait%C4%97%20Vilnius?hl=lt",
+      "sha256": "5776fa35ba18d1068b8439cf129604c499ebfe48dba895380cde20dfa4562873",
+      "fetched_at": "2026-10-17T15:48:21.968043+00:00"
+    },
+    {
+      "file": "autoservisas-rasos-vilnius.html",
+      "url": "https://www.google.com/maps/search/autoservisas%20Rasos%20Vilnius?hl=lt",
+      "sha256": "3bceade5385034824ab36a361eadc951cbcc9d22f2b9033ebdf13b06b3e0e9d1",
+      "fetched_at": "2026-10-17T15:48:37.666734+00:00"
+    },
+    {
+      "file": "autoservisas-senamiestis-vilnius.html",
+      "url": "https://www.google.com/maps/search/autoservisas%20Senamiestis%20Vilnius?hl=lt",
+      "sha256": "63bcfd8fa7c6302412655b376d491440ac23a6e9cebdd954dd46c3c02e40738d",
+      "fetched_at": "2026-10-17T15:51:02.889500+00:00"
+    },
+    {
+      "file": "autoservisas-seskine-vilnius.html",
+      "url": "https://www.google.com/maps/search/autoservisas%20%C5%A0e%C5%A1kin%C4%97%20Vilnius?hl=lt",
+      "sha256": "bf4639b1f1df15f7cd1918d1a451e8f085482094c614ac08882ddbedb6fff778",
+      "fetched_at": "2026-10-17T15:51:34.282298+00:00"
+    },
+    {
+      "file": "autoservisas-snipiskes-vilnius.html",
+      "url": "https://www.google.com/maps/search/autoservisas%20%C5%A0nipi%C5%A1k%C4%97s%20Vilnius?hl=lt",
+      "sha256": "8c5f11d10b01a157b14b31b5ee6480d17ad35c04158995894c1f5749fab3cb92",
+      "fetched_at": "2026-10-17T15:52:03.811747+00:00"
+    },
+    {
+      "file": "autoservisas-verkiai-vilnius.html",
+      "url": "https://www.google.com/maps/search/autoservisas%20Verkiai%20Vilnius?hl=lt",
+      "sha256": "2c8fed9cff50b8a1f63b1cd30e16860c7af3979640a5b5b899cf36c8660e888f",
+      "fetched_at": "2026-10-17T15:52:17.775768+00:00"
+    },
+    {
+      "file": "autoservisas-vilkpede-vilnius.html",
+      "url": "https://www.google.com/maps/search/autoservisas%20Vilkp%C4%97d%C4%97%20Vilnius?hl=lt",
+      "sha256": "e821dc116166fb3ba0c563bf30c7b2991e868487d7faff67ea2a5d119107d78b",
+      "fetched_at": "2026-10-17T15:52:28.386470+00:00"
+    },
+    {
+      "file": "autoservisas-virsuliskes-vilnius.html",
+      "url": "https://www.google.com/maps/search/autoservisas%20Vir%C5%A1uli%C5%A1k%C4%97s%20Vilnius?hl=lt",
+      "sha256": "f7080bebb477948f297cdb252925143bf80c890e33abec19886f806c91f56328",
+      "fetched_at": "2026-10-17T15:52:38.831105+00:00"
+    },
+    {
+      "file": "autoservisas-zirmunai-vilnius.html",
+      "url": "https://www.google.com/maps/search/autoservisas%20%C5%BDirm%C5%ABnai%20Vilnius?hl=lt",
+      "sha256": "9a2920c4a682316a22e85622f226c8d66ab40ffa10e8371dedeb2373944d2c7b",
+      "fetched_at": "2026-10-17T15:52:57.382277+00:00"
+    },
+    {
+      "file": "autoservisas-zverynas-vilnius.html",
+      "url": "https://www.google.com/maps/search/autoservisas%20%C5%BDv%C4%97rynas%20Vilnius?hl=lt",
+      "sha256": "e934fe177ecdb1a618b60ee9f3fd9900d9a3f0aeaad9815587b3af9c33b81b29",
+      "fetched_at": "2026-10-17T15:53:19.056885+00:00"
+    },
+    {
+      "file": "odontologijos-klinika-antakalnis-vilnius.html",
+      "url": "https://www.google.com/maps/search/odontologijos%20klinika%20Antakalnis%20Vilnius?hl=lt",
+      "sha256": "a7a3994cff513dc481b734c4bee0d6356d04a0561445067a0694c6b204cc22f7",
+      "fetched_at": "2026-10-17T15:53:31.315393+00:00"
+    },
+    {
+      "file": "odontologijos-klinika-fabijoniskes-vilnius.html",
+      "url": "https://www.google.com/maps/search/odontologijos%20klinika%20Fabijoni%C5%A1k%C4%97s%20Vilnius?hl=lt",
+      "sha256": "ae3d67d6ddd1f14da222e11ddff5b235da69f186162fb28b0c8606d76976fa77",
+      "fetched_at": "2026-10-17T15:53:55.417154+00:00"
+    },
+    {
+      "file": "odontologijos-klinika-grigiskes-vilnius.html",
+      "url": "https://www.google.com/maps/search/odontologijos%20klinika%20Grigi%C5%A1k%C4%97s%20Vilnius?hl=lt",
+      "sha256": "7fee03749cefdf2d355864d871a7dbdce8c5e9698cc15cdac8566e69bc296f2c",
+      "fetched_at": "2026-10-17T15:54:16.069129+00:00"
+    },
+    {
+      "file": "odontologijos-klinika-justiniskes-vilnius.html",
+      "url": "https://www.google.com/maps/search/odontologijos%20klinika%20Justini%C5%A1k%C4%97s%20Vilnius?hl=lt",
+      "sha256": "fdc91ad6d6ad22252c40db69ade47b60663f5991a6ca76994b5af1d8f87e60c9",
+      "fetched_at": "2026-10-17T15:54:31.129397+00:00"
+    },
+    {
+      "file": "odontologijos-klinika-karoliniskes-vilnius.html",
+      "url": "https://www.google.com/maps/search/odontologijos%20klinika%20Karolini%C5%A1k%C4%97s%20Vilnius?hl=lt",
+      "sha256": "3ab82c2fe27de4246dcf828e90e2c0d66177cafad92112a0c0401ef0613d75bc",
+      "fetched_at": "2026-10-17T15:54:50.518864+00:00"
+    },
+    {
+      "file": "odontologijos-klinika-lazdynai-vilnius.html",
+      "url": "https://www.google.com/maps/search/odontologijos%20klinika%20Lazdynai%20Vilnius?hl=lt",
+      "sha256": "a02861e00bcc0c3e952ad2ea9948eb7461098a1668e4434d49e3bc0f26cb6de5",
+      "fetched_at": "2026-10-17T15:55:12.768648+00:00"
+    },
+    {
+      "file": "odontologijos-klinika-naujamiestis-vilnius.html",
+      "url": "https://www.google.com/maps/search/odontologijos%20klinika%20Naujamiestis%20Vilnius?hl=lt",
+      "sha256": "0dd7ac9345dc2cebe59f446eff827de44609a47e5444cd616a52ef212c07d828",
+      "fetched_at": "2026-10-17T15:55:24.115941+00:00"
+    },
+    {
+      "file": "odontologijos-klinika-naujininkai-vilnius.html",
+      "url": "https://www.google.com/maps/search/odontologijos%20klinika%20Naujininkai%20Vilnius?hl=lt",
+      "sha256": "9e0d65a64c8140be547419aaebf8071ac8525844a7861e1ac6ccf7cf33287e95",
+      "fetched_at": "2026-10-17T15:55:46.032114+00:00"
+    },
+    {
+      "file": "odontologijos-klinika-naujoji-vilnia-vilnius.html",
+      "url": "https://www.google.com/maps/search/odontologijos%20klinika%20Naujoji%20Vilnia%20Vilnius?hl=lt",
+      "sha256": "f3a00111cb16080ffc5443a6afb608a3232d33b2795eb3c6386ce1f5a5a29e28",
+      "fetched_at": "2026-10-17T15:55:54.346362+00:00"
+    },
+    {
+      "file": "odontologijos-klinika-paneriai-vilnius.html",
+      "url": "https://www.google.com/maps/search/odontologijos%20klinika%20Paneriai%20Vilnius?hl=lt",
+      "sha256": "8c94d5b3ccc31b8c23e2c64ea84181372e9675084e6c784427beb546cce97b5d",
+      "fetched_at": "2026-10-17T15:56:05.807222+00:00"
+    },
+    {
+      "file": "odontologijos-klinika-pasilaiciai-vilnius.html",
+      "url": "https://www.google.com/maps/search/odontologijos%20klinika%20Pa%C5%A1ilai%C4%8Diai%20Vilnius?hl=lt",
+      "sha256": "622f0a378cf217119b2b9299ad750d68d2dc665881fb0f7f79389e25e1d08139",
+      "fetched_at": "2026-10-17T15:56:27.183732+00:00"
+    },
+    {
+      "file": "odontologijos-klinika-pilaite-vilnius.html",
+      "url": "https://www.google.com/maps/search/odontologijos%20klinika%20Pilait%C4%97%20Vilnius?hl=lt",
+      "sha256": "d0404eac258c3a7bd6d9af55d698053ad4f78c84c9ede392154d9081aef2ef5c",
+      "fetched_at": "2026-10-17T15:56:37.232067+00:00"
+    },
+    {
+      "file": "odontologijos-klinika-rasos-vilnius.html",
+      "url": "https://www.google.com/maps/search/odontologijos%20klinika%20Rasos%20Vilnius?hl=lt",
+      "sha256": "fd1d83f5c244b5b1e3b4e33c302ca75c87fbe930c3e4d0c10744562e7fa21c51",
+      "fetched_at": "2026-10-17T15:56:54.417128+00:00"
+    },
+    {
+      "file": "odontologijos-klinika-senamiestis-vilnius.html",
+      "url": "https://www.google.com/maps/search/odontologijos%20klinika%20Senamiestis%20Vilnius?hl=lt",
+      "sha256": "7f780901dbe2941a510efa3ec0e4b699973cbffaa30f50f481c87bbca72c7223",
+      "fetched_at": "2026-10-17T15:57:13.538312+00:00"
+    },
+    {
+      "file": "odontologijos-klinika-seskine-vilnius.html",
+      "url": "https://www.google.com/maps/search/odontologijos%20klinika%20%C5%A0e%C5%A1kin%C4%97%20Vilnius?hl=lt",
+      "sha256": "8d24d47ef2ad0ed5739da2ecc14ce634ce9835842f3ca6bd08ef8155bb267d38",
+      "fetched_at": "2026-10-17T15:57:46.273153+00:00"
+    },
+    {
+      "file": "odontologijos-klinika-snipiskes-vilnius.html",
+      "url": "https://www.google.com/maps/search/odontologijos%20klinika%20%C5%A0nipi%C5%A1k%C4%97s%20Vilnius?hl=lt",
+      "sha256": "17c4a3caa20497bdb559b6293c5343298e5fc01bdfca9fa3cec51d43f52942b3",
+      "fetched_at": "2026-10-17T15:58:05.550085+00:00"
+    },
+    {
+      "file": "odontologijos-klinika-verkiai-vilnius.html",
+      "url": "https://www.google.com/maps/search/odontologijos%20klinika%20Verkiai%20Vilnius?hl=lt",
+      "sha256": "ced77e9bc259425d05b8fdcad4f122d168e31a728b1abae267f1dd84e1365012",
+      "fetched_at": "2026-10-17T15:58:23.510948+00:00"
+    },
+    {
+      "file": "odontologijos-klinika-vilkpede-vilnius.html",
+      "url": "https://www.google.com/maps/search/odontologijos%20klinika%20Vilkp%C4%97d%C4%97%20Vilnius?hl=lt",
+      "sha256": "0a6da8d51609105cd4ac815e48383f6d7481b161a0560c183850c194982dde40",
+      "fetched_at": "2026-10-17T15:58:51.354573+00:00"
+    },
+    {
+      "file": "odontologijos-klinika-virsuliskes-vilnius.html",
+      "url": "https://www.google.com/maps/search/odontologijos%20klinika%20Vir%C5%A1uli%C5%A1k%C4%97s%20Vilnius?hl=lt",
+      "sha256": "d3cddd17844134b42cabf2628aef91178e093ed86916d82ebb90d15802796262",
+      "fetched_at": "2026-10-17T15:59:00.747967+00:00"
+    },
+    {
+      "file": "odontologijos-klinika-zirmunai-vilnius.html",
+      "url": "https://www.google.com/maps/search/odontologijos%20klinika%20%C5%BDirm%C5%ABnai%20Vilnius?hl=lt",
+      "sha256": "e5f1d0555bd2458277f5fcaacbf3355e9c893f1b98f8d0afb743862d3ba84b29",
+      "fetched_at": "2026-10-17T15:59:51.799435+00:00"
+    },
+    {
+      "file": "odontologijos-klinika-zverynas-vilnius.html",
+      "url": "https://www.google.com/maps/search/odontologijos%20klinika%20%C5%BDv%C4%97rynas%20Vilnius?hl=lt",
+      "sha256": "583c144570b44d2abdd84aef4a117218fc1a2b8fca23eca2f28e2bbb085328c5",
+      "fetched_at": "2026-10-17T16:01:08.679577+00:00"
+    }
+  ]
+}

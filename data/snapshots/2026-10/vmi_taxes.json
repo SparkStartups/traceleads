@@ -1,0 +1,13 @@
+{
+  "source": "vmi_taxes",
+  "rows": 387597,
+  "period": "2026-10-08",
+  "files": [
+    {
+      "file": "vmi_taxes.jsonl",
+      "url": "https://get.data.gov.lt/datasets/gov/vmi/ja_mokesciai/Moketojas?select(_page,mm_kodas.ja_kodas,pavadinimas,metai,menuo,suma,atnaujinta)&metai>=2024&limit(20000)",
+      "sha256": "ef27c6505bb157bd7a86c79bbf88874479fe8fd9ea43769873e79b16e51d3f2a",
+      "fetched_at": "2026-10-17T11:42:03.005225+00:00"
+    }
+  ]
+}

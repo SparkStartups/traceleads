@@ -1,0 +1,13 @@
+{
+  "source": "sodra",
+  "rows": 840194,
+  "period": "202608",
+  "files": [
+    {
+      "file": "monthly-2026.csv.zip",
+      "url": "https://atvira.sodra.lt/imones/downloads/2026/monthly-2026.csv.zip",
+      "sha256": "1f1426a905853b62b8a002a0f9a637d166cd2fb45d5b38b1acc56ed3ed306c33",
+      "fetched_at": "2026-10-17T11:40:00.274679+00:00"
+    }
+  ]
+}
