@@ -8,9 +8,10 @@ similar businesses. Every lead carries the listing and the official records it r
 numbers behind its score, and the innocent explanations to rule out first. These are leads for a
 closer look, not accusations.
 
-**Status: design.** The system is built in stages: infrastructure, collect, load, transform,
-publish, the app. Each section below is updated when its part is built; the results of a real run
-are added at the end.
+**Status: collect.** The system is built in stages: infrastructure, collect, load, transform,
+publish, the app. The infrastructure and collection are built, and October 2026 is collected.
+Each section below is updated when its part is built; the results of a real run are added at the
+end.
 
 ## Scope
 
@@ -63,6 +64,8 @@ uses, and a manifest per source with each raw file's URL, SHA-256 and download t
   at most 200 times. A card the parser does not recognise stops the snapshot rather than
   saving a guess.
 - The snapshot replaces the month's folder only when every source succeeded.
+- A raw file's modification time is recorded as its download time, so raw files are copied with
+  their times (`cp -p`); otherwise a rebuilt snapshot differs from the committed one.
 
 | Source | Downloaded | Kept in the snapshot |
 |---|---|---|
@@ -157,7 +160,7 @@ precision.
 
 ## Run it
 
-Requires Docker with Compose v2.
+Requires Docker with Compose v2.24 or later.
 
 ```bash
 docker compose up

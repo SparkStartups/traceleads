@@ -137,7 +137,7 @@ def test_a_build_replaces_the_warehouse_with_the_snapshots_there_are(project_roo
     assert built_months(project_root) == [OCTOBER]
 
 
-def test_a_failed_model_stops_the_build_without_publishing(project_root, snapshot):
+def test_a_failed_model_stops_the_build_without_publishing(project_root, snapshot, caplog):
     snapshot(SEPTEMBER)
     assert runner.invoke(app, ["build"]).exit_code == 0
     snapshot(OCTOBER)
@@ -149,7 +149,9 @@ def test_a_failed_model_stops_the_build_without_publishing(project_root, snapsho
     result = runner.invoke(app, ["build"])
 
     assert result.exit_code == 1
-    assert isinstance(result.exception, duckdb.CatalogException)
+    assert "2026-09 mart/10_broken.sql failed after" in caplog.text
+    assert "Table with name nope does not exist" in caplog.text
+    assert "the published warehouse was not changed" in caplog.text
     assert built_months(project_root) == [SEPTEMBER]
 
 

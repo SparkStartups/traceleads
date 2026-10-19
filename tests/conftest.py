@@ -80,11 +80,11 @@ class RawSources:
             if dotted:
                 header.insert(5, SODRA_DOTTED_CODE)
             lines = [";".join(header)]
-            for month in range(1, 13 if year < latest.year else latest.month + 1):
+            for month_number in range(1, 13 if year < latest.year else latest.month + 1):
                 for code, jar_code, name, evrk, insured in SODRA_EMPLOYERS:
                     cells = [code, jar_code, f'"{name}"', '"Vilniaus m. sav."', evrk]
                     cells += [evrk, '"Restoranų veikla"'] if dotted else ['"Restoranų veikla"']
-                    cells += [f"{year}{month:02d}", "", insured, "", "0", ""]
+                    cells += [f"{year}{month_number:02d}", "", insured, "", "0", ""]
                     lines.append(";".join(cells))
             files[year] = _zip(f"monthly-{year}.csv", "\n".join(lines) + "\n")
         return files

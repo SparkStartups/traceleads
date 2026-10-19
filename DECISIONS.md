@@ -30,9 +30,9 @@ source into a monthly snapshot with a manifest of each raw file's URL, SHA-256 a
 `build` (offline) runs numbered SQL models `stg → int → mart` with data-quality checks after each
 layer, and publishes the new warehouse only if no blocking check fails. Every build rebuilds every
 month: no migrations, every month scored by the same code, and the committed lead list can be
-reproduced byte for byte. *Rejected:* PostgreSQL, a server for one analyst's local tool; dbt, a
-framework for about twenty models; appending each month to the published file, where a changed
-table breaks the next build.
+reproduced byte for byte. Each month adds about 12.5 MB of Parquet to the repository.
+*Rejected:* PostgreSQL, a server for one analyst's local tool; dbt, a framework for about twenty
+models; appending each month to the published file, where a changed table breaks the next build.
 
 **5. One configuration in Python, written into `ref` tables.** Categories (keywords, Google
 categories, activity classes), legal forms, the city's bounds and every threshold are defined once
@@ -71,8 +71,8 @@ Each flagged company shows the innocent explanations the data makes plausible: a
 off the payroll, a young company, several places, dentists billing through their own companies.
 
 **9. Owners' names stay out.** An individual enterprise (IĮ) is one person's business. The
-snapshot keeps only the trade name in quotes from its name, and the published list leaves out its
-registered address, often a home.
+snapshot keeps only the trade name in quotes from its name, and drops that too when it holds the
+owner's name. The published list leaves out its registered address, often a home.
 
 **10. A local Streamlit app over the read-only warehouse,** with the leads and their evidence,
 the category overview, month-over-month changes, matching precision and the review queue, runs

@@ -15,6 +15,15 @@ from leads.collect.source import RawFile, Source
 URL = "https://get.data.gov.lt/datasets/gov/vmi/ja_mokesciai/Moketojas"
 FILE_NAME = "vmi_taxes.jsonl"
 FIELDS = ("mm_kodas.ja_kodas", "pavadinimas", "metai", "menuo", "suma", "atnaujinta")
+# The fields' types, given rather than guessed from the first rows of the file.
+COLUMNS = {
+    "mm_kodas": "STRUCT(ja_kodas BIGINT)",
+    "pavadinimas": "VARCHAR",
+    "metai": "BIGINT",
+    "menuo": "BIGINT",
+    "suma": "DOUBLE",
+    "atnaujinta": "DATE",
+}
 PAGE_SIZE = 20_000
 YEARS = 3  # this year to date and the two before, so a closed year exists even in January
 # An individual enterprise (IĮ) is named after its owner, and so is its trade name at times
@@ -22,6 +31,7 @@ YEARS = 3  # this year to date and the two before, so a closed year exists even 
 # of a name, the trade name even when quotes are nested (IĮ "A. Petraičio firma "Ratai"), and
 # drops it when it holds an owner's name: an initial and a name, or a first name and a surname
 # in the genitive, told by their endings. In capitals only the endings no common word has count.
+# DuckDB runs the patterns: its regular expressions know \p{Lu}, Python's re does not.
 LAST_QUOTED = r'[„"“]([^„"“”]+)[“"”][^„"“”]*$'
 FIRST_NAME_ENDINGS = ("o", "os", "ės", "aus", "io", "ių", "iaus")
 SURNAME_ENDINGS = ("ės", "os", "io", "iaus", "ausko", "insko", "cko", "ovo", "evo", "ūno", "ėno")
@@ -77,7 +87,7 @@ class VmiTaxes(Source):
                     menuo,
                     suma,
                     atnaujinta
-                FROM read_json(?, format = 'newline_delimited')
+                FROM read_json(?, format = 'newline_delimited', columns = ?)
             )
             SELECT
                 ja_kodas,
@@ -88,7 +98,7 @@ class VmiTaxes(Source):
                 atnaujinta
             FROM payers
             """,
-            params=[LAST_QUOTED, str(file.path), OWNER_NAME],
+            params=[LAST_QUOTED, str(file.path), COLUMNS, OWNER_NAME],
         )
 
 

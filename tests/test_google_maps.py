@@ -109,6 +109,15 @@ def test_a_repeated_place_keeps_its_first_card(edited):
     assert places(html)["Moss"].review_count == 9
 
 
+def test_a_card_outside_the_results_list_is_ignored(list_page):
+    page = LexborHTMLParser(list_page)
+    feed = page.css_first('div[role="feed"]')
+    outside = node(feed.css_first('div[role="article"]').html, 'div[role="article"]')
+    outside.css_first("a.hfpxzc").attrs["aria-label"] = "Outside"
+    feed.insert_before(outside)
+    assert "Outside" not in places(page.html)
+
+
 def detail_spans(card: LexborNode) -> list[LexborNode]:
     """Return the parts of a card's detail line: category, accessibility icon, address."""
     return card.css("div.W4Efsd > div.W4Efsd > span")
@@ -294,7 +303,6 @@ def test_the_snapshot_has_a_row_per_place_and_query(list_page, place_page, tmp_p
         (5596741140976187341, "Cozy", 1815, False, "dental_clinics", last.text, last.file_name)
     ]
     manifest = json.loads((tmp_path / "google_maps.json").read_text(encoding="utf-8"))
-    assert manifest["period"] == str(datetime.now(UTC).date())  # the day the pages were saved
     assert len(manifest["files"]) == len(QUERIES)
 
 
@@ -307,6 +315,8 @@ def test_a_place_is_dated_by_the_day_its_page_was_saved(list_page, place_page, t
     snapshot_of(pages, tmp_path, month, saved_at=datetime(2026, 10, 17, 12, tzinfo=UTC))
     dates = duckdb.sql(f"SELECT DISTINCT fetched_on FROM '{tmp_path / 'google_maps.parquet'}'")
     assert dates.fetchall() == [(datetime(2026, 10, 17).date(),)]
+    manifest = json.loads((tmp_path / "google_maps.json").read_text(encoding="utf-8"))
+    assert manifest["period"] == "2026-10-17"
 
 
 def test_a_page_that_no_longer_parses_is_named(list_page, tmp_path, month):

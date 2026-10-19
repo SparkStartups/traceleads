@@ -77,6 +77,6 @@ def build() -> None:
                     for layer in ("stg", "int", "mart"):
                         warehouse.run_layer(run, layer)
                         warehouse.run_checks(run, layer)
-    except (DataQualityError, PublishError) as exc:
+    except (duckdb.Error, DataQualityError, PublishError) as exc:
         log.error("%s; the published warehouse was not changed", exc)
         raise typer.Exit(1) from exc
