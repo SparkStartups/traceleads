@@ -1,4 +1,4 @@
-"""DuckDB warehouse: run-metadata schema, layered SQL models and publishing."""
+"""DuckDB warehouse: run-metadata schema, layered SQL models, their checks and publishing."""
 
 import time
 from collections.abc import Generator
@@ -8,10 +8,12 @@ from typing import Self
 
 import duckdb
 
+from leads.checks import Check, DataQualityError, Severity
 from leads.tracking import Run
 
 META_SQL = "meta.sql"
 MODEL_GLOB = "[0-9][0-9]_*.sql"
+CHECKS_DIR = "dq"
 PUBLISH_ATTEMPTS = 20
 PUBLISH_RETRY_SECONDS = 0.25
 
@@ -48,6 +50,11 @@ class Warehouse:
         """Return the SQL model files (``<layer>/NN_name.sql``) in execution order."""
         return sorted((self.sql_dir / layer).glob(MODEL_GLOB))
 
+    def checks(self, layer: str) -> list[Check]:
+        """Return the checks of ``layer`` (``dq/<layer>_name.sql``) in name order."""
+        paths = sorted((self.sql_dir / CHECKS_DIR).glob(f"{layer}_*.sql"))
+        return [Check.from_file(path, layer) for path in paths]
+
     def run_layer(self, run: Run, layer: str) -> None:
         """Execute every model of ``layer`` as a step of ``run``.
 
@@ -58,6 +65,19 @@ class Warehouse:
         for path in self.model_files(layer):
             with run.step(f"{layer}/{path.name}"):
                 self.execute_file(path)
+
+    def run_checks(self, run: Run, layer: str) -> None:
+        """Run the checks of ``layer`` as one step of ``run``, recording each result.
+
+        Every check runs before an ``error`` failure is raised, so all results are recorded.
+        """
+        with run.step(f"{CHECKS_DIR}/{layer}"):
+            failed = []
+            for check in self.checks(layer):
+                if check.evaluate(self.con, run) and check.severity is Severity.ERROR:
+                    failed.append(check.name)
+            if failed:
+                raise DataQualityError(f"failed {layer} checks: {', '.join(failed)}")
 
 
 @contextmanager

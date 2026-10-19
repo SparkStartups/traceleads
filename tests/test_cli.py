@@ -106,6 +106,37 @@ def test_a_failed_model_stops_the_build_without_publishing(project_root, snapsho
     assert built_months(project_root) == [SEPTEMBER]
 
 
+def test_a_failed_error_check_stops_the_build_after_its_layer(project_root, snapshot, caplog):
+    for month in (SEPTEMBER, OCTOBER):
+        snapshot(month)
+    (project_root / "sql" / "dq").mkdir()
+    (project_root / "sql" / "dq" / "stg_always_fails.sql").write_text(
+        "SELECT 1 AS x", encoding="utf-8"
+    )
+    (project_root / "sql" / "int").mkdir()
+    (project_root / "sql" / "int" / "10_model.sql").write_text(
+        "CREATE TABLE int.t AS SELECT 1 AS x;", encoding="utf-8"
+    )
+
+    result = runner.invoke(app, ["build"])
+
+    assert result.exit_code == 1
+    assert "failed stg checks: stg_always_fails; the published warehouse" in caplog.text
+    assert not Settings(project_root).warehouse_path.exists()
+    failed_build = Settings(project_root).warehouse_path.with_name("leads.building.duckdb")
+    with duckdb.connect(failed_build, read_only=True) as con:
+        failed = con.execute(
+            "SELECT check_name FROM meta.dq_results WHERE failing_rows > 0"
+        ).fetchall()
+        runs = con.execute("SELECT count(*) FROM meta.pipeline_runs").fetchone()
+        int_tables = con.execute(
+            "SELECT count(*) FROM duckdb_tables() WHERE schema_name = 'int'"
+        ).fetchone()
+    assert failed == [("stg_always_fails",)]  # September's only: October was never started
+    assert runs == (0,)  # a failed run is not recorded
+    assert int_tables == (0,)  # the build stopped after the stg checks
+
+
 def test_build_reports_a_warehouse_left_open(project_root, snapshot, lock_file, caplog):
     snapshot(SEPTEMBER)
     lock_file(Settings(project_root).warehouse_path, times=PUBLISH_ATTEMPTS)

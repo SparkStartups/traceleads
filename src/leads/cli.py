@@ -4,6 +4,7 @@ import logging
 
 import typer
 
+from leads.checks import DataQualityError
 from leads.config import Settings
 from leads.tracking import Run
 from leads.warehouse import PublishError, Warehouse, publish_on_success
@@ -23,7 +24,7 @@ def main() -> None:
 
 @app.command()
 def build() -> None:
-    """Rebuild every snapshot month into a new warehouse, published only if every month succeeds."""
+    """Rebuild every snapshot month into a new warehouse, published only if no error check fails."""
     settings = Settings()
     months = settings.snapshot_months()
     if not months:
@@ -40,6 +41,7 @@ def build() -> None:
                 ):
                     for layer in ("stg", "int", "mart"):
                         warehouse.run_layer(run, layer)
-    except PublishError as exc:
+                        warehouse.run_checks(run, layer)
+    except (DataQualityError, PublishError) as exc:
         log.error("%s; the published warehouse was not changed", exc)
         raise typer.Exit(1) from exc

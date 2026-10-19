@@ -53,6 +53,11 @@ and publishes the file only if no blocking check fails. The warehouse is a funct
 snapshots, the labels and the code, so it never needs a migration and a test can rebuild the
 committed month byte for byte.
 
+A data-quality check is one query in `sql/dq/<layer>_<name>.sql` that returns the rows breaking a
+rule. It runs after its layer's models, and its count and first five rows are recorded in
+`meta.dq_results`. It is an `error`, which stops the build, unless its first line is
+`-- severity: warn`; a warning is only recorded.
+
 | Layer | Holds |
 |---|---|
 | `ref` | the configuration: categories, legal forms, the city's bounds, thresholds |

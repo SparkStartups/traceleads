@@ -1,6 +1,6 @@
 import os
 import shutil
-from collections.abc import Callable, Iterator
+from collections.abc import Callable, Generator
 from datetime import date
 from pathlib import Path
 
@@ -28,7 +28,7 @@ def month() -> date:
 
 @pytest.fixture
 def sql_dir(tmp_path: Path) -> Path:
-    """Return an SQL directory with the real meta schema and no models."""
+    """Return an SQL directory with the real meta schema and no models or checks."""
     directory = tmp_path / "models"
     directory.mkdir()
     shutil.copy(REPO_SQL_DIR / META_SQL, directory)
@@ -48,13 +48,13 @@ def write_model(sql_dir: Path) -> Callable[[str, str], None]:
 
 
 @pytest.fixture
-def warehouse(tmp_path: Path, sql_dir: Path) -> Iterator[Warehouse]:
+def warehouse(tmp_path: Path, sql_dir: Path) -> Generator[Warehouse]:
     with Warehouse.open(tmp_path / "test.duckdb", sql_dir, tmp_path) as opened:
         yield opened
 
 
 @pytest.fixture
-def run(warehouse: Warehouse, month: date) -> Iterator[Run]:
+def run(warehouse: Warehouse, month: date) -> Generator[Run]:
     with Run.start(warehouse.con, month) as active:
         yield active
 
