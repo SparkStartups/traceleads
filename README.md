@@ -46,11 +46,16 @@ uses, and a manifest per source with each raw file's URL, SHA-256 and download t
   a rerun downloads only what is missing.
 - A download that is not the file asked for, such as a web page, is refused; so is such a file
   saved into the raw folder by hand, and the error names the file to replace.
+- Sodra publishes a month about four weeks after it ends, so its latest month is two months
+  before the snapshot month, or three if a release is late. Only the files of the years that
+  can hold its latest three months, five to two months back, are downloaded. Columns are matched by the code in brackets that ends each header cell, since the
+  header text changes between years.
 - The snapshot replaces the month's folder only when every source succeeded.
 
 | Source | Downloaded | Kept in the snapshot |
 |---|---|---|
 | Register of Legal Entities (`jar`) | the bulk CSV of registered entities | code, name, address, registration date, legal form, status, file date |
+| Sodra (`sodra`) | the zipped monthly CSV of each year that holds Sodra's latest three months | company code, month, insured people, activity code |
 
 ## How it works
 

@@ -10,7 +10,7 @@ from leads.collect.fetch import FetchError
 from leads.collect.jar import FILE_NAME
 from leads.config import Settings, current_month
 
-SNAPSHOT_FILES = ["jar.json", "jar.parquet"]
+SNAPSHOT_FILES = ["jar.json", "jar.parquet", "sodra.json", "sodra.parquet"]
 
 
 @pytest.fixture
@@ -44,11 +44,14 @@ def drop_last_company(settings: Settings, month: date) -> None:
 
 def test_current_month_downloads_every_source(project_root, raw_sources, session):
     month = current_month()
-    session.reply(raw_sources(month).jar_csv())
+    raw = raw_sources(month)
+    session.reply(raw.jar_csv())
+    for content in raw.sodra_years().values():
+        session.reply(content)
 
     collect_month(Settings(project_root), month)
 
-    assert len(session.requests) == 1
+    assert len(session.requests) == 1 + len(raw.sodra_years())
     snapshot_dir = Settings(project_root).snapshot_dir(month)
     assert sorted(path.name for path in snapshot_dir.iterdir()) == SNAPSHOT_FILES
 
@@ -88,7 +91,9 @@ def test_failed_rerun_keeps_the_earlier_snapshot(project_root, raw_sources, earl
     settings = Settings(project_root)
     raw_sources(earlier_month).write(settings)
     collect_month(settings, earlier_month)
-    (settings.raw_dir("jar", earlier_month) / FILE_NAME).write_text("<html>", encoding="utf-8")
+    drop_last_company(settings, earlier_month)
+    for zipped in settings.raw_dir("sodra", earlier_month).iterdir():  # after the JAR was read
+        zipped.write_text("<html>", encoding="utf-8")
 
     with pytest.raises(FetchError, match="replace it"):
         collect_month(settings, earlier_month)

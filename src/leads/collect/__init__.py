@@ -9,12 +9,13 @@ import duckdb
 
 from leads.collect.fetch import Fetcher
 from leads.collect.jar import Jar
+from leads.collect.sodra import Sodra
 from leads.collect.source import Source
 from leads.config import MONTH_FORMAT, Settings, current_month
 
 log = logging.getLogger(__name__)
 
-SOURCES: tuple[Source, ...] = (Jar(),)
+SOURCES: tuple[Source, ...] = (Jar(), Sodra())
 
 
 def collect_month(settings: Settings, month: date) -> None:

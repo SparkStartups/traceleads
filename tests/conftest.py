@@ -1,5 +1,7 @@
+import io
 import os
 import shutil
+import zipfile
 from collections.abc import Callable, Generator
 from dataclasses import dataclass, field
 from datetime import date
@@ -9,7 +11,7 @@ import pytest
 
 from leads import tracking
 from leads import warehouse as warehouse_module
-from leads.collect import fetch, jar
+from leads.collect import fetch, jar, sodra
 from leads.config import Settings
 from leads.tracking import Run
 from leads.warehouse import META_SQL, Warehouse
@@ -27,6 +29,27 @@ JAR_LINES = (
     "304000003|Individuali įmonė|Kaunas, Laisvės al. 1, LT-44001|2015-01-10|810|"
     "Individuali įmonė|7|Likviduojamas|2026-01-01|2026-10-15",
 )
+SODRA_HEADER = (
+    "Draudėjo kodas (code)",
+    "Juridinių asmenų registro kodas (jarCode)",
+    "Pavadinimas (name)",
+    "Savivaldybė, kurioje registruota(municipality)",
+    "Ekonominės veiklos rūšies kodas(ecoActCode)",
+    "Ekonominės veiklos rūšies pavadinimas(ecoActName)",
+    "Mėnuo (month)",
+    "Vidutinis darbo užmokestis (avgWage)",
+    "Apdraustųjų skaičius (numInsured)",
+    "Vidutinis darbo užmokestis II (avgWage2)",
+    "Apdraustųjų skaičius II (numInsured2)",
+    "Įmokų suma (tax)",
+)
+SODRA_DOTTED_CODE = "Ekonominės veiklos rūšies kodas EVRK(ecoActCodeStr)"  # added in 2026
+# (code, jarCode, name, ecoActCode, insured); the last insurer has no Lithuanian company code
+SODRA_EMPLOYERS = (
+    ("1001", "304000001", "UAB „Kavos namai“", "561100", "5"),
+    ("1002", "304000002", "Advokatų profesinė bendrija „LEGES | LB“", "15000", "1"),
+    ("3976550", "", "„MSM DIGITAL GROUP GMBH“", "", "1"),
+)
 
 
 @dataclass(frozen=True)
@@ -38,11 +61,44 @@ class RawSources:
     def jar_csv(self) -> bytes:
         return ("\n".join(JAR_LINES) + "\n").encode()
 
+    def sodra_years(self) -> dict[int, bytes]:
+        """Return the zipped CSV of each year Sodra is fetched for, January to its latest month."""
+        latest = sodra.months_before(self.month, sodra.LAST_MONTH_BACK)
+        first_year = sodra.months_before(self.month, sodra.FIRST_MONTH_BACK).year
+        files = {}
+        for year in range(first_year, latest.year + 1):
+            dotted = year >= 2026
+            header = list(SODRA_HEADER)
+            if dotted:
+                header.insert(5, SODRA_DOTTED_CODE)
+            lines = [";".join(header)]
+            for month in range(1, 13 if year < latest.year else latest.month + 1):
+                for code, jar_code, name, evrk, insured in SODRA_EMPLOYERS:
+                    cells = [code, jar_code, f'"{name}"', '"Vilniaus m. sav."', evrk]
+                    cells += [evrk, '"Restoranų veikla"'] if dotted else ['"Restoranų veikla"']
+                    cells += [f"{year}{month:02d}", "", insured, "", "0", ""]
+                    lines.append(";".join(cells))
+            files[year] = _zip(f"monthly-{year}.csv", "\n".join(lines) + "\n")
+        return files
+
     def write(self, settings: Settings) -> None:
         """Put the files in the month's raw folders, as a finished download leaves them."""
-        path = settings.raw_dir("jar", self.month) / jar.FILE_NAME
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_bytes(self.jar_csv())
+        _write(settings.raw_dir("jar", self.month) / jar.FILE_NAME, self.jar_csv())
+        for year, content in self.sodra_years().items():
+            path = settings.raw_dir("sodra", self.month) / sodra.FILE_NAME.format(year=year)
+            _write(path, content)
+
+
+def _zip(name: str, text: str) -> bytes:
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w") as archive:
+        archive.writestr(name, text.encode())
+    return buffer.getvalue()
+
+
+def _write(path: Path, content: bytes) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(content)
 
 
 @dataclass(frozen=True)
