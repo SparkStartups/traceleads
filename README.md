@@ -122,6 +122,7 @@ Requires [uv](https://docs.astral.sh/uv/).
 make test     # run the tests
 make lint     # check the lock file, lint and formatting
 make format   # apply lint fixes and formatting
+make build    # rebuild the warehouse from every snapshot month
 ```
 
 CI runs `make lint test` on every push.
@@ -135,6 +136,7 @@ src/leads/app/      the Streamlit app
 sql/                stg, int, mart, dq (checks), analyst (saved queries)
 data/snapshots/     committed inputs of each month
 data/labels/        hand-labelled links
+warehouse/          the built DuckDB file (not committed)
 output/             committed lead list of each month
 tests/              pytest, no network
 ```

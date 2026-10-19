@@ -3,6 +3,13 @@ name = "leads"
 version = "0.1.0"
 description = "Vilnius businesses that look busy on Google Maps but declare little staff and tax."
 requires-python = ">=3.12"
+dependencies = [
+    "duckdb>=1.5.6",
+    "typer>=0.27.3",
+]
+
+[project.scripts]
+leads = "leads.cli:app"
 
 [dependency-groups]
 dev = [
