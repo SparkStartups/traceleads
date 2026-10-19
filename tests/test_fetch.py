@@ -32,7 +32,7 @@ def test_get_returns_the_body(session):
     session.reply(b"data")
     with Fetcher(offline=False) as fetcher:
         assert fetcher.get(URL) == b"data"
-    assert session.requests == [("GET", URL, None)]
+    assert session.requests == [("GET", URL, None, None)]
 
 
 @pytest.mark.parametrize(
@@ -87,7 +87,16 @@ def test_get_json_asks_for_json(session):
     session.reply(b'{"rows": 1}')
     with Fetcher(offline=False) as fetcher:
         assert fetcher.get_json(URL) == {"rows": 1}
-    assert session.requests == [("GET", URL, {"Accept": "application/json"})]
+    assert session.requests == [("GET", URL, {"Accept": "application/json"}, None)]
+
+
+def test_post_json_sends_the_payload_with_extra_headers(session):
+    session.reply(b'{"state": "done"}')
+    with Fetcher(offline=False) as fetcher:
+        answer = fetcher.post_json(URL, {"url": "x"}, {"Authorization": "Bearer key"})
+    assert answer == {"state": "done"}
+    headers = {"Accept": "application/json", "Authorization": "Bearer key"}
+    assert session.requests == [("POST", URL, headers, {"url": "x"})]
 
 
 def test_get_json_rejects_a_web_page(session):

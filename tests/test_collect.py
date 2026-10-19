@@ -11,6 +11,8 @@ from leads.collect.jar import FILE_NAME
 from leads.config import Settings, current_month
 
 SNAPSHOT_FILES = [
+    "google_maps.json",
+    "google_maps.parquet",
     "jar.json",
     "jar.parquet",
     "sodra.json",
@@ -49,17 +51,19 @@ def drop_last_company(settings: Settings, month: date) -> None:
     path.write_bytes(b"".join(path.read_bytes().splitlines(keepends=True)[:-1]))
 
 
-def test_current_month_downloads_every_source(project_root, raw_sources, session):
+def test_current_month_downloads_every_source(project_root, raw_sources, session, api_key):
     month = current_month()
     raw = raw_sources(month)
     session.reply(raw.jar_csv())
     for content in raw.sodra_years().values():
         session.reply(content)
     session.reply(json.dumps({"_data": raw.vmi_rows()}).encode())
+    for page in raw.google_pages().values():
+        session.reply(json.dumps({"results": [{"html": page}]}).encode())
 
     collect_month(Settings(project_root), month)
 
-    assert len(session.requests) == 1 + len(raw.sodra_years()) + 1
+    assert len(session.requests) == 1 + len(raw.sodra_years()) + 1 + len(raw.google_pages())
     snapshot_dir = Settings(project_root).snapshot_dir(month)
     assert sorted(path.name for path in snapshot_dir.iterdir()) == SNAPSHOT_FILES
 

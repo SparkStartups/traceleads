@@ -13,7 +13,7 @@ format:
 	uv run ruff format .
 
 collect:
-	uv run leads collect
+	uv run --env-file .env leads collect
 
 build:
 	uv run leads build

@@ -53,8 +53,15 @@ uses, and a manifest per source with each raw file's URL, SHA-256 and download t
   saved into the raw folder by hand, and the error names the file to replace.
 - Sodra publishes a month about four weeks after it ends, so its latest month is two months
   before the snapshot month, or three if a release is late. Only the files of the years that
-  can hold its latest three months, five to two months back, are downloaded. Columns are matched by the code in brackets that ends each header cell, since the
-  header text changes between years.
+  can hold its latest three months, five to two months back, are downloaded. Columns are
+  matched by the code in brackets that ends each header cell, since the header text changes
+  between years.
+- Google Maps is searched for each category keyword in each of Vilnius' 21 elderships, since a
+  results list shows about 20 places: 84 pages, rendered by the Oxylabs Web API, which needs
+  `OXYLABS_API_KEY` in `.env` (copy `.env.example`). About one render in four comes back
+  without the page's JavaScript run, so a page is tried up to five times, and one run renders
+  at most 200 times. A card the parser does not recognise stops the snapshot rather than
+  saving a guess.
 - The snapshot replaces the month's folder only when every source succeeded.
 
 | Source | Downloaded | Kept in the snapshot |
@@ -62,6 +69,7 @@ uses, and a manifest per source with each raw file's URL, SHA-256 and download t
 | Register of Legal Entities (`jar`) | the bulk CSV of registered entities | code, name, address, registration date, legal form, status, file date |
 | Sodra (`sodra`) | the zipped monthly CSV of each year that holds Sodra's latest three months | company code, month, insured people, activity code |
 | VMI taxes paid (`vmi_taxes`) | this year to date and the two years before, from the data.gov.lt API, page by page | company code, trade name, year, months covered, amount, update date |
+| Google Maps (`google_maps`) | one rendered results page per category keyword and eldership | place id, name, Google category, address, coordinates, review count, closed flag, and the query and page it came from |
 
 ## How it works
 
@@ -170,7 +178,7 @@ Requires [uv](https://docs.astral.sh/uv/).
 make test     # run the tests
 make lint     # check the lock file, lint and formatting
 make format   # apply lint fixes and formatting
-make collect  # download the current month's sources and write its snapshot
+make collect  # download the current month's sources and write its snapshot (needs .env)
 make build    # rebuild the warehouse from every snapshot month
 ```
 

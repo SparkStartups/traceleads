@@ -1,4 +1,4 @@
-"""Project paths and the snapshot month."""
+"""Project paths, the snapshot month and the categories searched for."""
 
 from dataclasses import dataclass, field
 from datetime import date, datetime
@@ -46,3 +46,44 @@ class Settings:
             for path in self.snapshots_dir.glob(MONTH_GLOB)
             if path.is_dir()
         )
+
+
+@dataclass(frozen=True)
+class Category:
+    """A business category and the Lithuanian words Google Maps is searched for it with."""
+
+    key: str
+    keywords: tuple[str, ...]
+
+
+CATEGORIES = (
+    Category("cafes_bakeries", ("kavinė", "kepykla")),
+    Category("car_repair", ("autoservisas",)),
+    Category("dental_clinics", ("odontologijos klinika",)),
+)
+CITY = "Vilnius"
+# A results list shows about 20 places, so the city is searched eldership by eldership.
+ELDERSHIPS = (
+    "Antakalnis",
+    "Fabijoniškės",
+    "Grigiškės",
+    "Justiniškės",
+    "Karoliniškės",
+    "Lazdynai",
+    "Naujamiestis",
+    "Naujininkai",
+    "Naujoji Vilnia",
+    "Paneriai",
+    "Pašilaičiai",
+    "Pilaitė",
+    "Rasos",
+    "Senamiestis",
+    "Šeškinė",
+    "Šnipiškės",
+    "Verkiai",
+    "Vilkpėdė",
+    "Viršuliškės",
+    "Žirmūnai",
+    "Žvėrynas",
+)
+RENDER_CAP = 200  # Oxylabs renders per collect run: 84 searches and their retries

@@ -1,3 +1,4 @@
 __pycache__/
 /warehouse/
 /data/raw/
+.env

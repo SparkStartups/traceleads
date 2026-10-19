@@ -46,18 +46,25 @@ class Fetcher:
         self._session.close()
 
     def get(self, url: str) -> bytes:
-        return self._request(url, headers=None)
+        return self._request("GET", url, headers=None)
 
     def get_json(self, url: str) -> dict:
-        return _parse_json(url, self._request(url, headers=JSON_ACCEPT))
+        return _parse_json(url, self._request("GET", url, headers=JSON_ACCEPT))
 
-    def _request(self, url: str, *, headers: dict[str, str] | None) -> bytes:
-        """Return the body of ``url``, retrying rate limits, server errors and lost connections."""
+    def post_json(self, url: str, payload: dict, headers: dict[str, str]) -> dict:
+        """Send ``payload`` as JSON with ``headers`` and return the JSON answer."""
+        answer = self._request("POST", url, headers=JSON_ACCEPT | headers, body=payload)
+        return _parse_json(url, answer)
+
+    def _request(
+        self, method: str, url: str, *, headers: dict[str, str] | None, body: dict | None = None
+    ) -> bytes:
+        """Return the answer's body, retrying rate limits, server errors and lost connections."""
         if self.offline:
             raise FetchError(f"{url}: not downloaded, and only the current month can be fetched")
         for attempt in range(1, ATTEMPTS + 1):
             try:
-                response = self._session.request("GET", url, headers=headers)
+                response = self._session.request(method, url, headers=headers, json=body)
             except requests.RequestsError as exc:
                 problem = f"{url}: {exc}"
             else:

@@ -14,11 +14,17 @@ import pytest
 from leads import tracking
 from leads import warehouse as warehouse_module
 from leads.collect import fetch, jar, sodra, vmi_taxes
+from leads.collect.google_maps import API_KEY_VARIABLE, QUERIES
 from leads.config import Settings
 from leads.tracking import Run
 from leads.warehouse import META_SQL, Warehouse
 
 REPO_SQL_DIR = Path(__file__).resolve().parents[1] / "sql"
+FIXTURES = Path(__file__).parent / "fixtures"
+# Real Google Maps renders, trimmed: a results list of 20 places, and the page of one place.
+LIST_PAGE = (FIXTURES / "maps_list.html").read_text(encoding="utf-8")
+PLACE_PAGE = (FIXTURES / "maps_place.html").read_text(encoding="utf-8")
+NO_LIST_PAGE = '<html><body><div role="main"></div></body></html>'  # rendered, without places
 
 JAR_LINES = (
     "ja_kodas|ja_pavadinimas|adresas|ja_reg_data|form_kodas|form_pavadinimas|stat_kodas|"
@@ -109,6 +115,13 @@ class RawSources:
             row(None, "TGW LIMITED", year - 1, 12, 135653.74),
         ]
 
+    def google_pages(self) -> dict[str, str]:
+        """Return the rendered page of each query by file name: one list of places, the rest
+        rendered without one, which keeps the fixture month small."""
+        return {
+            query.file_name: LIST_PAGE if query == QUERIES[0] else NO_LIST_PAGE for query in QUERIES
+        }
+
     def write(self, settings: Settings) -> None:
         """Put the files in the month's raw folders, as a finished download leaves them."""
         _write(settings.raw_dir("jar", self.month) / jar.FILE_NAME, self.jar_csv())
@@ -117,6 +130,8 @@ class RawSources:
             _write(path, content)
         lines = "".join(json.dumps(row, ensure_ascii=False) + "\n" for row in self.vmi_rows())
         _write(settings.raw_dir("vmi_taxes", self.month) / vmi_taxes.FILE_NAME, lines.encode())
+        for file_name, page in self.google_pages().items():
+            _write(settings.raw_dir("google_maps", self.month) / file_name, page.encode())
 
 
 def _zip(name: str, text: str) -> bytes:
@@ -141,6 +156,7 @@ class SentRequest(NamedTuple):
     method: str
     url: str
     headers: dict[str, str] | None
+    json: dict | None
 
 
 @dataclass
@@ -159,8 +175,10 @@ class FakeSession:
     def fail(self, error: Exception) -> None:
         self.replies.append(error)
 
-    def request(self, method: str, url: str, headers: dict[str, str] | None) -> FakeResponse:
-        self.requests.append(SentRequest(method, url, headers))
+    def request(
+        self, method: str, url: str, headers: dict[str, str] | None, json: dict | None
+    ) -> FakeResponse:
+        self.requests.append(SentRequest(method, url, headers, json))
         reply = self.replies.pop(0)
         if isinstance(reply, Exception):
             raise reply
@@ -198,6 +216,28 @@ def month() -> date:
 @pytest.fixture
 def raw_sources() -> type[RawSources]:
     return RawSources
+
+
+@pytest.fixture
+def list_page() -> str:
+    return LIST_PAGE
+
+
+@pytest.fixture
+def place_page() -> str:
+    return PLACE_PAGE
+
+
+@pytest.fixture(autouse=True)
+def no_api_key(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Hide the developer's Oxylabs key; the tests that need a key ask for ``api_key``."""
+    monkeypatch.delenv(API_KEY_VARIABLE, raising=False)
+
+
+@pytest.fixture
+def api_key(monkeypatch: pytest.MonkeyPatch) -> str:
+    monkeypatch.setenv(API_KEY_VARIABLE, "test-key")
+    return "test-key"
 
 
 @pytest.fixture
