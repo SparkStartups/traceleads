@@ -5,10 +5,11 @@ from pathlib import Path
 
 import duckdb
 import pytest
+import typer
 from typer.testing import CliRunner
 
-from leads.cli import app
-from leads.config import Settings
+from leads.cli import app, parse_month
+from leads.config import Settings, current_month
 from leads.warehouse import PUBLISH_ATTEMPTS
 
 SEPTEMBER, OCTOBER = date(2026, 9, 1), date(2026, 10, 1)
@@ -33,6 +34,52 @@ def snapshot(project_root: Path) -> Callable[[date], Path]:
         return folder
 
     return make
+
+
+def test_parse_month_strips_whitespace():
+    assert parse_month(" 2026-10 ") == date(2026, 10, 1)
+
+
+@pytest.mark.parametrize("value", ["2026-13", "26-10", "2026/10", "2026-10-01", ""])
+def test_parse_month_rejects_invalid(value: str):
+    with pytest.raises(typer.BadParameter, match="expected YYYY-MM"):
+        parse_month(value)
+
+
+def test_collect_rejects_an_invalid_month(project_root):
+    result = runner.invoke(app, ["collect", "--month", "2026-13"])
+    assert result.exit_code == 2
+    assert "'2026-13'" in result.output  # Typer wraps the message to the terminal width
+
+
+def test_collect_writes_the_snapshot_of_a_month(project_root, raw_sources):
+    raw_sources(SEPTEMBER).write(Settings(project_root))
+    result = runner.invoke(app, ["collect", "--month", "2026-09"])
+    assert result.exit_code == 0, result.output
+    assert (Settings(project_root).snapshot_dir(SEPTEMBER) / "jar.parquet").exists()
+
+
+def test_collect_defaults_to_the_current_month(project_root, raw_sources):
+    raw_sources(current_month()).write(Settings(project_root))
+    result = runner.invoke(app, ["collect"])
+    assert result.exit_code == 0, result.output
+    assert (Settings(project_root).snapshot_dir(current_month()) / "jar.parquet").exists()
+
+
+def test_collect_reports_a_month_it_cannot_fetch(project_root, caplog):
+    result = runner.invoke(app, ["collect", "--month", "2026-09"])
+    assert result.exit_code == 1
+    assert "only the current month can be fetched" in caplog.text
+
+
+def test_collect_reports_a_source_that_changed(project_root, raw_sources, caplog):
+    raw = raw_sources(SEPTEMBER)
+    raw.write(Settings(project_root))
+    path = Settings(project_root).raw_dir("jar", SEPTEMBER) / "JAR_IREGISTRUOTI.csv"
+    path.write_bytes(raw.jar_csv().replace(b"stat_kodas", b"statusas"))
+    result = runner.invoke(app, ["collect", "--month", "2026-09"])
+    assert result.exit_code == 1
+    assert "stat_kodas" in caplog.text
 
 
 def test_build_rebuilds_every_snapshot_month_oldest_first(project_root, snapshot):
@@ -77,7 +124,7 @@ def test_layers_run_in_order_stg_int_mart(project_root, snapshot):
 def test_build_without_any_snapshot_stops(project_root, caplog):
     result = runner.invoke(app, ["build"])
     assert result.exit_code == 1
-    assert "no snapshot in" in caplog.text
+    assert "run `leads collect` first" in caplog.text
     assert not Settings(project_root).warehouse_path.exists()
 
 

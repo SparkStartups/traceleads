@@ -1,4 +1,4 @@
-.PHONY: test lint format build
+.PHONY: test lint format collect build
 
 test:
 	uv run pytest
@@ -11,6 +11,9 @@ lint:
 format:
 	uv run ruff check --fix .
 	uv run ruff format .
+
+collect:
+	uv run leads collect
 
 build:
 	uv run leads build

@@ -8,6 +8,11 @@ MONTH_FORMAT = "%Y-%m"
 MONTH_GLOB = "[0-9][0-9][0-9][0-9]-[0-9][0-9]"
 
 
+def current_month() -> date:
+    """Return the first day of the current month."""
+    return date.today().replace(day=1)
+
+
 @dataclass(frozen=True)
 class Settings:
     """Filesystem layout relative to the project root, the working directory by default."""
@@ -21,6 +26,10 @@ class Settings:
     @property
     def warehouse_path(self) -> Path:
         return self.root / "warehouse" / "leads.duckdb"
+
+    def raw_dir(self, source: str, month: date) -> Path:
+        """Return the folder of ``source``'s files as downloaded for ``month``."""
+        return self.root / "data" / "raw" / source / f"{month:{MONTH_FORMAT}}"
 
     @property
     def snapshots_dir(self) -> Path:

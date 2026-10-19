@@ -35,6 +35,23 @@ Individual enterprises (IĮ) are one person's business, and their names are ofte
 name. The snapshot keeps only the trade name in quotes, and the published list leaves out an IĮ's
 registered address.
 
+## Collecting a month
+
+`leads collect` downloads each source into `data/raw/<source>/<month>/` and writes the month's
+snapshot to `data/snapshots/<month>/`: one Parquet file per source with only the fields the system
+uses, and a manifest per source with each raw file's URL, SHA-256 and download time.
+
+- Only the current month can be downloaded, because the sources publish their current state. An
+  earlier month is rebuilt from the raw files saved for it (`leads collect --month YYYY-MM`), and
+  a rerun downloads only what is missing.
+- A download that is not the file asked for, such as a web page, is refused; so is such a file
+  saved into the raw folder by hand, and the error names the file to replace.
+- The snapshot replaces the month's folder only when every source succeeded.
+
+| Source | Downloaded | Kept in the snapshot |
+|---|---|---|
+| Register of Legal Entities (`jar`) | the bulk CSV of registered entities | code, name, address, registration date, legal form, status, file date |
+
 ## How it works
 
 ```
@@ -132,6 +149,8 @@ This builds the image and runs `leads build`, which rebuilds the warehouse from
 reports that there is no snapshot and exits with code 1. Runs in Docker record their commit as
 `unknown`: the image holds no git history.
 
+`docker compose run --rm pipeline collect` collects the current month in Docker.
+
 ## Develop and test
 
 Requires [uv](https://docs.astral.sh/uv/).
@@ -140,6 +159,7 @@ Requires [uv](https://docs.astral.sh/uv/).
 make test     # run the tests
 make lint     # check the lock file, lint and formatting
 make format   # apply lint fixes and formatting
+make collect  # download the current month's sources and write its snapshot
 make build    # rebuild the warehouse from every snapshot month
 ```
 

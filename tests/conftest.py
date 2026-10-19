@@ -9,12 +9,40 @@ import pytest
 
 from leads import tracking
 from leads import warehouse as warehouse_module
-from leads.collect import fetch
+from leads.collect import fetch, jar
 from leads.config import Settings
 from leads.tracking import Run
 from leads.warehouse import META_SQL, Warehouse
 
 REPO_SQL_DIR = Path(__file__).resolve().parents[1] / "sql"
+
+JAR_LINES = (
+    "ja_kodas|ja_pavadinimas|adresas|ja_reg_data|form_kodas|form_pavadinimas|stat_kodas|"
+    "stat_pavadinimas|stat_data_nuo|formavimo_data",
+    '304000001|UAB "Kavos namai"|Vilnius, Trakų g. 8-5, LT-01132|2019-05-02|310|'
+    "Uždaroji akcinė bendrovė|0|Teisinis statusas neįregistruotas|2019-05-02|2026-10-16",
+    '304000002|"Advokatų profesinė bendrija ""LEGES | LB"""|Vilnius, Gedimino pr. 1, LT-01103|'
+    "2009-09-24|840|Advokatų profesinė bendrija|0|Teisinis statusas neįregistruotas|2009-09-24|"
+    "2026-10-16",
+    "304000003|Individuali įmonė|Kaunas, Laisvės al. 1, LT-44001|2015-01-10|810|"
+    "Individuali įmonė|7|Likviduojamas|2026-01-01|2026-10-15",
+)
+
+
+@dataclass(frozen=True)
+class RawSources:
+    """Small but realistic raw files of every source for one snapshot month."""
+
+    month: date
+
+    def jar_csv(self) -> bytes:
+        return ("\n".join(JAR_LINES) + "\n").encode()
+
+    def write(self, settings: Settings) -> None:
+        """Put the files in the month's raw folders, as a finished download leaves them."""
+        path = settings.raw_dir("jar", self.month) / jar.FILE_NAME
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(self.jar_csv())
 
 
 @dataclass(frozen=True)
@@ -73,6 +101,11 @@ def fixed_git_sha(monkeypatch: pytest.MonkeyPatch) -> None:
 @pytest.fixture
 def month() -> date:
     return date(2026, 10, 1)
+
+
+@pytest.fixture
+def raw_sources() -> type[RawSources]:
+    return RawSources
 
 
 @pytest.fixture
