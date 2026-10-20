@@ -240,6 +240,21 @@ Car repair shops and dental clinics that are not owner-operated are compared wit
 tercile; the others across their category. Of the flagged companies, only the three dental clinics
 carry an explanation; none is owner-operated, young or runs several places.
 
+`mart.category_summary` follows each category from the places Google showed to the companies
+judged; its flagged share is leads and watch among the judged companies. `mart.sensitivity`
+tiers the judged companies again under each gap ratio (a half, a third, a quarter) and minimum of
+reviews (25, 50, 100) in `ref.sensitivity`, with peers and holds as scored, and counts how many
+of the month's leads stay leads.
+
+| October | Places | In scope | Linked | Companies | Judged | Leads | Watch | Flagged share |
+|---|---|---|---|---|---|---|---|---|
+| Cafés and bakeries | 361 | 162 | 36 | 22 | 19 | 0 | 2 | 11% |
+| Car repair | 202 | 191 | 65 | 61 | 57 | 2 | 3 | 9% |
+| Dental clinics | 182 | 163 | 76 | 74 | 73 | 0 | 3 | 4% |
+
+Both October leads stay leads at a gap of a half or a third with any minimum of reviews; at a half
+there are 5 to 8 leads, and at a quarter none of them is one.
+
 ## Trusting the list
 
 - **Data-quality checks** after every layer; a failing blocking check stops the build and

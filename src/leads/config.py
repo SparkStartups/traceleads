@@ -221,3 +221,17 @@ SCORING = Scoring(
     young_months=12,
     little_tax=1000,
 )
+
+
+@dataclass(frozen=True)
+class Sensitivity:
+    """The limits an analyst might dispute, which the companies are judged again with: each gap
+    ratio with each minimum of reviews."""
+
+    gap_ratios: tuple[float, ...]
+    min_reviews: tuple[int, ...]
+
+
+SENSITIVITY = Sensitivity(
+    gap_ratios=(1 / 2, SCORING.gap_ratio, 1 / 4), min_reviews=(25, SCORING.min_reviews, 100)
+)

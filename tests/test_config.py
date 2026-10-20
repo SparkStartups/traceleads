@@ -1,6 +1,11 @@
 from datetime import date
 
-from leads.config import LEGAL_FORMS, Settings, current_month, generic_words
+from leads.config import (
+    LEGAL_FORMS,
+    Settings,
+    current_month,
+    generic_words,
+)
 
 
 def test_snapshot_months_are_the_month_directories_oldest_first(tmp_path):

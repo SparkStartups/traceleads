@@ -385,3 +385,88 @@ def test_a_company_carries_the_innocent_explanations_its_data_makes_plausible(
 ):
     scored = scores(stg_run, fact(SUBJECT, **details), columns="explanations")
     assert scored[SUBJECT] == (explanations,)
+
+
+# The category summary and the sensitivity grid
+
+
+SUMMARY = (
+    "SELECT category, places, outside_city, other_activity, in_scope, linked, in_review, rejected, "
+    "unmatched, companies, held, judged, busy, leads, watch, flagged_share "
+    "FROM mart.category_summary ORDER BY category"
+)
+
+
+REJECT_COZY = (
+    f"INSERT INTO stg.match_labels SELECT {MONTH}, cid, 304100001, 'random', false "
+    "FROM stg.google_listings WHERE name = 'Cozy'"
+)
+
+
+@pytest.mark.parametrize(
+    ("labelled_wrong", "linked", "rejected"),
+    [(False, 1, 0), (True, 0, 1)],
+    ids=["linked", "rejected"],
+)
+def test_the_category_summary_follows_the_places_into_scope_and_links(
+    stg_run, labelled_wrong, linked, rejected
+):
+    facts(
+        stg_run,
+        "UPDATE stg.google_listings SET google_category = 'Kavinė' WHERE name = 'Grey'",
+        *employer(304100001, 'UAB "Cozy"', tax="15000"),
+        *employer(304100002, 'MB "Rytas"', insured=(1,), address="Vilnius, Užupio g. 2, LT-01200"),
+        *([REJECT_COZY] if labelled_wrong else []),
+    )  # Grey is in scope with no candidate; Užupio kavinė's one fitting company goes to review
+    companies = (linked, linked, 0, 0, 0, 0, None)
+    assert stg_run.rows(SUMMARY) == [
+        ("cafes_bakeries", 20, 2, 15, 3, linked, 1, rejected, 1, *companies)
+    ]
+
+
+def test_the_category_summary_counts_the_companies_by_tier_with_the_flagged_share(stg_run):
+    scores(
+        stg_run,
+        fact(SUBJECT, reviews=103, insured=0.0, tax="5000"),  # a lead
+        fact(304100002, reviews=104, insured=0.0, tax="30000"),  # on watch
+        fact(304100003, reviews=104, insured=3.0, tax="5000"),  # on watch
+        fact(304100004, closed=True),
+        fact(304100005, category="car_repair", reviews=500),  # held, with no peers
+        *PEERS,
+    )
+    assert stg_run.rows(SUMMARY) == [
+        ("cafes_bakeries", 20, 2, 16, 2, 0, 0, 0, 2, 9, 1, 8, 5, 1, 2, 3 / 8),
+        ("car_repair", 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, None),  # no place found
+    ]
+
+
+PEERS_AT_40 = [fact(304200000 + n, reviews=40, insured=3.0, tax="30000") for n in range(5)]
+WITHIN_A_THIRD = ((0.5, 25), (0.5, 50), (0.33, 25), (0.33, 50))  # 60 reviews, ratios of 1/3
+
+
+@pytest.mark.parametrize(
+    ("insured", "tax", "cells", "counts"),
+    [
+        (1.0, "10000", WITHIN_A_THIRD, (1, 0, 1)),  # leads, watch, leads kept
+        (1.2, "12000", WITHIN_A_THIRD[:2], (1, 0, 0)),  # ratios of 0.4
+        (1.0, "30000", WITHIN_A_THIRD, (0, 1, 0)),  # tax at the peers' median
+        (3.0, "10000", WITHIN_A_THIRD, (0, 1, 0)),  # staff at the peers' median
+    ],
+    ids=["lead", "lead-at-a-half", "staff-gap", "tax-gap"],
+)
+def test_the_sensitivity_grid_tiers_the_judged_companies_again_at_each_setting(
+    stg_run, insured, tax, cells, counts
+):
+    held = [  # with two peers only, so its gaps count nowhere
+        fact(304300000, category="car_repair", reviews=60, insured=0.0, tax="1000"),
+        fact(304300001, category="car_repair", reviews=40, insured=3.0, tax="30000"),
+        fact(304300002, category="car_repair", reviews=40, insured=3.0, tax="30000"),
+    ]
+    scores(stg_run, fact(SUBJECT, reviews=60, insured=insured, tax=tax), *PEERS_AT_40, *held)
+    grid = stg_run.rows(
+        "SELECT round(gap_ratio, 2), min_reviews, leads, watch, leads_kept FROM mart.sensitivity"
+    )
+    assert len(grid) == 9
+    assert {(gap, minimum): tuple(found) for gap, minimum, *found in grid if any(found)} == {
+        cell: counts for cell in cells
+    }

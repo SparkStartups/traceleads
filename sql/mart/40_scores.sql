@@ -5,6 +5,21 @@
 -- A busy company declaring staff and tax at or below a share of its peers' medians is a lead; one
 -- of the two puts it on watch, unless its other figure is above the peers' median. Every company
 -- carries the innocent explanations its data makes plausible, to rule out before acting on it.
+
+-- The judgement, shared with the sensitivity grid, which varies min_reviews and gap_ratio.
+CREATE OR REPLACE MACRO mart.busy(reviews, category_median_reviews, min_reviews) AS
+    reviews >= category_median_reviews AND reviews >= min_reviews;
+
+CREATE OR REPLACE MACRO mart.gap(ratio, gap_ratio) AS coalesce(ratio <= gap_ratio, false);
+
+-- A company declaring more than its peers' median on the other figure is not quiet on paper.
+CREATE OR REPLACE MACRO mart.tier(busy, staff_gap, tax_gap, staff_within, tax_within) AS CASE
+    WHEN busy AND staff_gap AND tax_gap THEN 'lead'
+    WHEN busy AND staff_gap AND tax_within THEN 'watch'
+    WHEN busy AND tax_gap AND staff_within THEN 'watch'
+    ELSE 'not_flagged'
+END;
+
 CREATE TABLE IF NOT EXISTS mart.scores (
     snapshot_month          DATE    NOT NULL,
     ja_kodas                INTEGER NOT NULL,
@@ -83,24 +98,22 @@ scored AS (
         assessable.category_median_reviews,
         CASE WHEN peer_medians.by_tercile THEN 'review tercile' ELSE 'category' END AS peer_group,
         coalesce(peer_medians.peer_count, 0) AS peers,
-        assessable.reviews >= assessable.category_median_reviews
-            AND assessable.reviews >= scoring.min_reviews AS busy,
+        mart.busy(assessable.reviews, assessable.category_median_reviews, scoring.min_reviews)
+            AS busy,
         peer_medians.peer_median_staff,
         assessable.staff / nullif(peer_medians.peer_median_staff, 0) AS staff_ratio,
-        coalesce(staff_ratio <= scoring.gap_ratio, false) AS staff_gap,
+        mart.gap(staff_ratio, scoring.gap_ratio) AS staff_gap,
         peer_medians.peer_median_tax,
         assessable.tax / nullif(peer_medians.peer_median_tax, 0) AS tax_ratio,
-        coalesce(tax_ratio <= scoring.gap_ratio, false) AS tax_gap,
+        mart.gap(tax_ratio, scoring.gap_ratio) AS tax_gap,
         peer_medians.peer_median_tax - assessable.tax AS tax_gap_eur,
-        CASE
-            WHEN peers < scoring.min_peers THEN 'held'
-            WHEN busy AND staff_gap AND tax_gap THEN 'lead'
-            -- a company declaring more than its peers on the other figure is not quiet on paper
-            WHEN busy AND staff_gap AND assessable.tax <= peer_medians.peer_median_tax THEN 'watch'
-            WHEN busy AND tax_gap AND assessable.staff <= peer_medians.peer_median_staff
-                THEN 'watch'
-            ELSE 'not_flagged'
-        END AS tier
+        CASE WHEN peers < scoring.min_peers THEN 'held' ELSE mart.tier(
+            busy,
+            staff_gap,
+            tax_gap,
+            assessable.staff <= peer_medians.peer_median_staff,
+            assessable.tax <= peer_medians.peer_median_tax
+        ) END AS tier
     FROM assessable
     LEFT JOIN peer_medians USING (ja_kodas)
     CROSS JOIN ref.scoring

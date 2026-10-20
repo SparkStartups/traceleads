@@ -12,6 +12,7 @@ from leads.config import (
     LEGAL_FORMS,
     MATCHING,
     SCORING,
+    SENSITIVITY,
     generic_words,
 )
 from leads.tracking import Run
@@ -61,6 +62,11 @@ def test_the_ref_tables_hold_the_configuration_once(tmp_path, sql_dir):
     ]
     assert file_rows(path, "SELECT * FROM ref.matching") == [astuple(MATCHING)]
     assert file_rows(path, "SELECT * FROM ref.scoring") == [astuple(SCORING)]
+    assert file_rows(path, "SELECT * FROM ref.sensitivity") == [
+        (gap_ratio, min_reviews)
+        for gap_ratio in SENSITIVITY.gap_ratios
+        for min_reviews in SENSITIVITY.min_reviews
+    ]
 
 
 def test_model_files_are_numbered_and_ordered_per_layer(warehouse, write_model):

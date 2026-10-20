@@ -4,6 +4,7 @@ import time
 from collections.abc import Generator
 from contextlib import contextmanager
 from dataclasses import asdict, dataclass
+from itertools import product
 from pathlib import Path
 from typing import Self
 
@@ -17,6 +18,7 @@ from leads.config import (
     LEGAL_FORMS,
     MATCHING,
     SCORING,
+    SENSITIVITY,
     generic_words,
 )
 from leads.tracking import Run
@@ -54,6 +56,10 @@ def ref_tables() -> dict[str, list[dict[str, object]]]:
         "city": [{"name": CITY} | asdict(CITY_BOUNDS)],
         "matching": [asdict(MATCHING)],
         "scoring": [asdict(SCORING)],
+        "sensitivity": [
+            {"gap_ratio": gap_ratio, "min_reviews": min_reviews}
+            for gap_ratio, min_reviews in product(SENSITIVITY.gap_ratios, SENSITIVITY.min_reviews)
+        ],
     }
 
 
