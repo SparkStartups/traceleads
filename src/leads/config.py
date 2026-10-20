@@ -51,12 +51,14 @@ class Settings:
 
 @dataclass(frozen=True)
 class Category:
-    """A business category: the Lithuanian words Google Maps is searched for it with, and the
-    Google categories of the places that belong to it."""
+    """A business category: the Lithuanian words Google Maps is searched for it with, the Google
+    categories of the places that belong to it, and the activity classes (EVRK) of the companies
+    that run them."""
 
     key: str
     keywords: tuple[str, ...]
     google_categories: tuple[str, ...]
+    activity_classes: tuple[str, ...]
 
 
 CATEGORIES = (
@@ -75,6 +77,8 @@ CATEGORIES = (
             "Desertų restoranas",
             "Kepyklos gaminių didmenininkas",
         ),
+        # restaurants and cafés, bread and fresh pastry, cakes, shops of bread and confectionery
+        activity_classes=("56.11", "10.71", "10.72", "47.24"),
     ),
     Category(
         key="car_repair",
@@ -91,11 +95,13 @@ CATEGORIES = (
             "Padangų servisas",
             "Ratų suvedimo paslaugų teikėjas",
         ),
+        activity_classes=("95.31",),  # repair and maintenance of motor vehicles
     ),
     Category(
         key="dental_clinics",
         keywords=("odontologijos klinika",),
         google_categories=("Odontologijos klinika", "Stomatologas", "Gydytojas odontologas"),
+        activity_classes=("86.23",),  # dental practice
     ),
 )
 CITY = "Vilnius"
@@ -168,3 +174,15 @@ def generic_words() -> list[str]:
     for category in CATEGORIES:
         phrases += [*category.keywords, *category.google_categories]
     return [word for phrase in phrases for word in phrase.split()]
+
+
+@dataclass(frozen=True)
+class Matching:
+    """When a word that a place's and a company's names share counts as evidence: few company
+    names use it, and it is long enough to mean something."""
+
+    rare_word_max_names: int
+    rare_word_min_letters: int
+
+
+MATCHING = Matching(rare_word_max_names=30, rare_word_min_letters=3)

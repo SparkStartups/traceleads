@@ -161,6 +161,14 @@ Only automatic links are scored. Two candidates under the deciding rule send the
 without a company. A sample of links per rule is labelled by hand to measure each rule's
 precision.
 
+A place's candidates (`int.candidates`) are the companies that share its brand, its building, or
+a rare word on its street, each with the evidence the pair shares. A rare word has three letters
+or more, is not a number, is used by 30 company names at most, and is not part of the street's
+name, so "Antakalnio servisas" and a company on Antakalnio gatvė share nothing. A company's
+activity fits when its latest activity class in Sodra is one of the category's: 56.11, 10.71,
+10.72 or 47.24 for cafés and bakeries, 95.31 for car repair, 86.23 for dental clinics. In October,
+439 of the 516 places in scope have candidates, 8,916 in all.
+
 ## Busy, and quiet on paper
 
 - **Unit:** the company, with the reviews of all its automatically linked places summed.

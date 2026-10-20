@@ -8,3 +8,8 @@ SELECT 'int.places', cid::VARCHAR
 FROM int.places
 WHERE snapshot_month = getvariable('snapshot_month')
 GROUP BY cid HAVING count(*) > 1
+UNION ALL
+SELECT 'int.candidates', cid || ' ' || ja_kodas
+FROM int.candidates
+WHERE snapshot_month = getvariable('snapshot_month')
+GROUP BY cid, ja_kodas HAVING count(*) > 1

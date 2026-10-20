@@ -10,7 +10,8 @@ CREATE TABLE IF NOT EXISTS int.companies (
     brand_key      VARCHAR,
     core_key       VARCHAR,
     street_key     VARCHAR,            -- none outside the city
-    house_number   VARCHAR
+    house_number   VARCHAR,
+    activity_code  VARCHAR             -- the latest in Sodra; none without insured staff
 );
 
 DELETE FROM int.companies WHERE snapshot_month = getvariable('snapshot_month');
@@ -19,6 +20,12 @@ INSERT INTO int.companies
 WITH trade_names AS (
     SELECT ja_kodas, arg_max(trade_name, tax_year) AS trade_name  -- the latest year with one
     FROM stg.vmi_taxes
+    WHERE snapshot_month = getvariable('snapshot_month')
+    GROUP BY ja_kodas
+),
+activities AS (
+    SELECT ja_kodas, arg_max(evrk, data_month) AS activity_code  -- the latest month with one
+    FROM stg.sodra_monthly
     WHERE snapshot_month = getvariable('snapshot_month')
     GROUP BY ja_kodas
 ),
@@ -51,5 +58,7 @@ SELECT
     brand_key,
     int.core_key(brand_key, generic_words),
     int.street_key(city_address),
-    int.house_number(city_address)
-FROM branded;
+    int.house_number(city_address),
+    activities.activity_code
+FROM branded
+LEFT JOIN activities USING (ja_kodas);
