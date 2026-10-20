@@ -196,12 +196,15 @@ MATCHING = Matching(rare_word_max_names=30, rare_word_min_letters=3)
 
 @dataclass(frozen=True)
 class Scoring:
-    """How many peers a company is compared with: at least ``min_peers`` in its category and
-    legal-form group, or it is held; its review tercile alone when that leaves at least
-    ``min_tercile_peers``."""
+    """How a company is judged. It is compared with at least ``min_peers`` peers of its category
+    and legal-form group, or held; with its review tercile's alone when that leaves at least
+    ``min_tercile_peers``. It is busy with at least its category's median reviews and
+    ``min_reviews``; a staff or tax gap is a figure at most ``gap_ratio`` of the peers' median."""
 
     min_peers: int
     min_tercile_peers: int
+    min_reviews: int
+    gap_ratio: float
 
 
-SCORING = Scoring(min_peers=5, min_tercile_peers=8)
+SCORING = Scoring(min_peers=5, min_tercile_peers=8, min_reviews=50, gap_ratio=1 / 3)

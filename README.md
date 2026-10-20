@@ -10,7 +10,7 @@ closer look, not accusations.
 
 **Status: transform.** The system is built in stages: infrastructure, collect, load, transform,
 publish, the app. The infrastructure, collection, staging tables, the links from Google places
-to companies and the facts of the linked companies are built, and October 2026 is collected.
+to companies, and the linked companies' facts and scores are built, and October 2026 is collected.
 Each section below is updated when its part is built; the results of a real run are added at the
 end.
 
@@ -217,12 +217,22 @@ has no known tax. In October that is 157 companies, 153 of them with a tax row.
 - **Held, not judged,** with the reason shown: every place closed, registered after January of
   the tax year, no VMI record (a missing row is not zero), too few peers.
 
-`mart.scores` holds each company's hold reason and, unless it was held before its peers were
-counted, its peer group and number of peers: at least 5 in the category and legal-form group, and
-the review tercile when it alone leaves at least 8 (`ref.scoring`). In October, 149 of the 157
-companies are judged; 3 are held for no tax record, 2 as registered after January 2025, and 3
-owner-operated cafés for having 2 peers each. Car repair shops and dental clinics that are not
-owner-operated are compared within their review tercile; the others across their category.
+`mart.scores` holds each company's tier (`lead`, `watch`, `not_flagged` or `held`), its hold reason,
+and, unless it was held before its peers were counted, its peer group, number of peers, whether it
+is busy, its staff and tax against the peers' medians, and the euro gap to the peers' tax. Flagged
+companies are ranked: leads first, then watch, each by that euro gap. The limits are in
+`ref.scoring`: at least 5 peers, the review tercile when it alone leaves at least 8, at least 50
+reviews, and a gap at a third of the peers' median.
+
+| October | Companies |
+|---|---|
+| Lead | 2 (car repair) |
+| Watch | 8 (3 car repair, 3 dental, 2 cafés and bakeries) |
+| Not flagged | 139 |
+| Held | 8: 3 without a tax record, 2 registered after January 2025, 3 owner-operated cafés with 2 peers each |
+
+Car repair shops and dental clinics that are not owner-operated are compared within their review
+tercile; the others across their category.
 
 ## Trusting the list
 

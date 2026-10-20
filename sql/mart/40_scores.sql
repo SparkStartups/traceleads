@@ -1,13 +1,27 @@
--- Each company with facts: held, with the reason, when the data cannot judge it; otherwise the
--- peers it is compared with. Peers share its category and legal-form group (owner-operated or
--- not), run one place and are not closed, young or without a tax record, the company left out;
--- they are its review tercile's when that leaves enough of them, else its category's.
+-- Each company with facts and its tier. A company the data cannot judge is held, with the reason.
+-- The others are compared with peers that share their category and legal-form group (owner-
+-- operated or not), run one place and are not closed, young or without a tax record, the company
+-- left out: the peers of its review tercile when that leaves enough of them, else its category's.
+-- A busy company declaring staff and tax at or below a share of its peers' medians is a lead; one
+-- of the two puts it on watch, unless its other figure is above the peers' median.
 CREATE TABLE IF NOT EXISTS mart.scores (
-    snapshot_month DATE    NOT NULL,
-    ja_kodas       INTEGER NOT NULL,
-    hold_reason    VARCHAR,           -- closed, young, no_tax_record or few_peers
-    peer_group     VARCHAR,           -- review tercile or category; none when held before peers
-    peers          INTEGER
+    snapshot_month          DATE    NOT NULL,
+    ja_kodas                INTEGER NOT NULL,
+    tier                    VARCHAR NOT NULL,  -- lead, watch, not_flagged or held
+    rank                    INTEGER,           -- leads, then watch, by the euro gap to peers' tax
+    hold_reason             VARCHAR,           -- closed, young, no_tax_record or few_peers
+    peer_group              VARCHAR,           -- review tercile or category
+    peers                   INTEGER,
+    category_median_reviews DOUBLE,            -- of the category, closed, young or no-tax left out
+    busy                    BOOLEAN,
+    staff                   DOUBLE  NOT NULL,  -- insured, plus an owner for an MB or IĮ
+    peer_median_staff       DOUBLE,
+    staff_ratio             DOUBLE,
+    staff_gap               BOOLEAN,
+    peer_median_tax         DOUBLE,
+    tax_ratio               DOUBLE,
+    tax_gap                 BOOLEAN,
+    tax_gap_eur             DOUBLE             -- the peers' median tax minus the company's
 );
 
 DELETE FROM mart.scores WHERE snapshot_month = getvariable('snapshot_month');
@@ -16,6 +30,7 @@ INSERT INTO mart.scores
 WITH companies AS (
     SELECT
         *,
+        insured_3m + owner_operated::INTEGER AS staff,
         CASE
             WHEN closed THEN 'closed'
             -- registered after January of the tax year, so it paid tax for part of it only
@@ -26,43 +41,88 @@ WITH companies AS (
     WHERE snapshot_month = getvariable('snapshot_month')
 ),
 assessable AS (
-    SELECT *, ntile(3) OVER (PARTITION BY category ORDER BY reviews, ja_kodas) AS tercile
+    SELECT
+        *,
+        ntile(3) OVER (PARTITION BY category ORDER BY reviews, ja_kodas) AS tercile,
+        median(reviews) OVER (PARTITION BY category) AS category_median_reviews
     FROM companies
     WHERE hold_reason IS NULL
 ),
-peer_counts AS (
+peer_values AS (  -- each company's peers, with how many of them share its review tercile
     SELECT
         company.ja_kodas,
-        count(peer.ja_kodas) FILTER (peer.tercile = company.tercile) AS tercile_peers,
-        count(peer.ja_kodas) AS category_peers
+        peer.tercile = company.tercile AS same_tercile,
+        count(*) FILTER (peer.tercile = company.tercile) OVER (PARTITION BY company.ja_kodas)
+            AS tercile_peers,
+        peer.staff,
+        peer.tax
     FROM assessable AS company
-    LEFT JOIN assessable AS peer
+    JOIN assessable AS peer
         ON peer.category = company.category
         AND peer.owner_operated = company.owner_operated
         AND peer.places = 1
         AND peer.ja_kodas <> company.ja_kodas
-    GROUP BY company.ja_kodas
 ),
-grouped AS (  -- the review tercile's peers when there are enough of them, else the category's
+peer_medians AS (  -- the review tercile's peers when there are enough of them, else the category's
     SELECT
         ja_kodas,
-        CASE WHEN by_tercile THEN 'review tercile' ELSE 'category' END AS peer_group,
-        CASE WHEN by_tercile THEN tercile_peers ELSE category_peers END AS peers
-    FROM (
-        SELECT *, tercile_peers >= scoring.min_tercile_peers AS by_tercile
-        FROM peer_counts
-        CROSS JOIN ref.scoring
-    )
+        any_value(tercile_peers >= scoring.min_tercile_peers) AS by_tercile,
+        count(*) AS peer_count,
+        median(staff) AS peer_median_staff,
+        median(tax) AS peer_median_tax
+    FROM peer_values
+    CROSS JOIN ref.scoring
+    WHERE same_tercile OR tercile_peers < scoring.min_tercile_peers
+    GROUP BY ja_kodas
+),
+scored AS (
+    SELECT
+        assessable.ja_kodas,
+        assessable.category_median_reviews,
+        CASE WHEN peer_medians.by_tercile THEN 'review tercile' ELSE 'category' END AS peer_group,
+        coalesce(peer_medians.peer_count, 0) AS peers,
+        assessable.reviews >= assessable.category_median_reviews
+            AND assessable.reviews >= scoring.min_reviews AS busy,
+        peer_medians.peer_median_staff,
+        assessable.staff / nullif(peer_medians.peer_median_staff, 0) AS staff_ratio,
+        coalesce(staff_ratio <= scoring.gap_ratio, false) AS staff_gap,
+        peer_medians.peer_median_tax,
+        assessable.tax / nullif(peer_medians.peer_median_tax, 0) AS tax_ratio,
+        coalesce(tax_ratio <= scoring.gap_ratio, false) AS tax_gap,
+        peer_medians.peer_median_tax - assessable.tax AS tax_gap_eur,
+        CASE
+            WHEN peers < scoring.min_peers THEN 'held'
+            WHEN busy AND staff_gap AND tax_gap THEN 'lead'
+            -- a company declaring more than its peers on the other figure is not quiet on paper
+            WHEN busy AND staff_gap AND assessable.tax <= peer_medians.peer_median_tax THEN 'watch'
+            WHEN busy AND tax_gap AND assessable.staff <= peer_medians.peer_median_staff
+                THEN 'watch'
+            ELSE 'not_flagged'
+        END AS tier
+    FROM assessable
+    LEFT JOIN peer_medians USING (ja_kodas)
+    CROSS JOIN ref.scoring
 )
 SELECT
     getvariable('snapshot_month'),
     companies.ja_kodas,
-    coalesce(
-        companies.hold_reason,
-        CASE WHEN grouped.peers < scoring.min_peers THEN 'few_peers' END
-    ),
-    grouped.peer_group,
-    grouped.peers
+    coalesce(scored.tier, 'held'),
+    CASE WHEN scored.tier IN ('lead', 'watch') THEN row_number() OVER (
+        PARTITION BY scored.tier IN ('lead', 'watch')
+        ORDER BY scored.tier = 'watch', scored.tax_gap_eur DESC, companies.ja_kodas
+    ) END,
+    coalesce(companies.hold_reason, CASE WHEN scored.tier = 'held' THEN 'few_peers' END),
+    scored.peer_group,
+    scored.peers,
+    scored.category_median_reviews,
+    scored.busy,
+    companies.staff,
+    scored.peer_median_staff,
+    scored.staff_ratio,
+    scored.staff_gap,
+    scored.peer_median_tax,
+    scored.tax_ratio,
+    scored.tax_gap,
+    scored.tax_gap_eur
 FROM companies
-LEFT JOIN grouped USING (ja_kodas)
-CROSS JOIN ref.scoring;
+LEFT JOIN scored USING (ja_kodas);

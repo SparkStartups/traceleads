@@ -136,12 +136,13 @@ def fact(
     closed: bool = False,
     owner_operated: bool = False,
     reg_date: str = "2018-01-01",
+    insured: float = 2.0,
     tax: str | None = "10000",
 ) -> str:
     """Return a row of mart.company_facts for the fixture month, with 2025 as the tax year."""
     return (
         f"({MONTH}, {code}, '{category}', {places}, {reviews}, {closed}, {owner_operated}, "
-        f"DATE '{reg_date}', 2.0, 2025, {tax or 'NULL'})"
+        f"DATE '{reg_date}', {insured}, 2025, {tax or 'NULL'})"
     )
 
 
@@ -149,15 +150,17 @@ def peers(count: int, **details: object) -> list[str]:
     return [fact(304200000 + number, reviews=100 + number, **details) for number in range(count)]
 
 
-def scores(stg_run, *facts: str) -> dict[int, tuple]:
-    """Score ``facts`` alone; return each company's hold, peer group and peers."""
+def scores(
+    stg_run, *facts: str, columns: str = "hold_reason, peer_group, peers"
+) -> dict[int, tuple]:
+    """Score ``facts`` alone; return each company's ``columns``."""
     stg_run.build_int()
     stg_run.warehouse.run_layer(stg_run.run, "mart")
     stg_run.warehouse.con.execute(
         f"DELETE FROM mart.company_facts; INSERT INTO mart.company_facts VALUES {', '.join(facts)}"
     )
     stg_run.warehouse.execute_file(stg_run.warehouse.sql_dir / "mart" / "40_scores.sql")
-    rows = stg_run.rows("SELECT ja_kodas, hold_reason, peer_group, peers FROM mart.scores")
+    rows = stg_run.rows(f"SELECT ja_kodas, {columns} FROM mart.scores")
     return {code: tuple(score) for code, *score in rows}
 
 
@@ -222,4 +225,119 @@ def test_a_rerun_scores_each_company_once_and_a_repeat_stops_the_build(stg_run):
     assert stg_run.rows("SELECT count(*) FROM mart.scores") == [(1,)]
     stg_run.warehouse.con.execute("INSERT INTO mart.scores SELECT * FROM mart.scores")
     with pytest.raises(DataQualityError, match="mart_unique_keys"):
+        stg_run.warehouse.run_checks(stg_run.run, "mart")
+
+
+# Busy, gaps and tiers: five peers declaring 3 insured and 30000 tax, with reviews 100 to 104
+
+PEERS = peers(5, insured=3.0, tax="30000")
+
+
+@pytest.mark.parametrize(
+    ("reviews", "others", "busy"),
+    [
+        (
+            103,
+            [*PEERS, *[fact(304500000 + n, category="car_repair", reviews=500) for n in range(9)]],
+            True,
+        ),
+        (103, [*PEERS, *[fact(304500000 + n, reviews=500, closed=True) for n in range(9)]], True),
+        (101, PEERS, False),  # under the category's median of 101.5
+        (50, [fact(304200000 + n, reviews=40) for n in range(5)], True),
+        (49, [fact(304200000 + n, reviews=40) for n in range(5)], False),  # under 50
+    ],
+    ids=["other-category", "held", "under-median", "at-fifty", "under-fifty"],
+)
+def test_a_busy_company_has_the_category_s_median_reviews_and_at_least_fifty(
+    stg_run, reviews, others, busy
+):
+    scored = scores(stg_run, fact(SUBJECT, reviews=reviews), *others, columns="busy")
+    assert scored[SUBJECT] == (busy,)
+
+
+@pytest.mark.parametrize(
+    ("details", "others", "gaps"),
+    [
+        ({"insured": 1.0, "tax": "10000"}, PEERS, (True, True)),  # a third of 3 and of 30000
+        ({"insured": 1.01, "tax": "10001"}, PEERS, (False, False)),
+        (  # 1.5 of 3 with owners
+            {"insured": 0.5, "owner_operated": True},
+            peers(5, owner_operated=True, insured=2.0),
+            (False, False),
+        ),
+        ({"insured": 0.0, "tax": "0"}, peers(5, insured=0.0, tax="0"), (False, False)),
+    ],
+    ids=["a-third", "over-a-third", "owner", "peers-declare-nothing"],
+)
+def test_a_gap_is_at_most_a_third_of_the_peers_median(stg_run, details, others, gaps):
+    scored = scores(stg_run, fact(SUBJECT, **details), *others, columns="staff_gap, tax_gap")
+    assert scored[SUBJECT] == gaps
+
+
+@pytest.mark.parametrize(
+    ("details", "tier"),
+    [
+        ({"reviews": 103, "insured": 0.0, "tax": "5000"}, "lead"),
+        ({"reviews": 103, "insured": 0.0, "tax": "30000"}, "watch"),  # tax at the median
+        ({"reviews": 103, "insured": 0.0, "tax": "30001"}, "not_flagged"),  # more tax
+        ({"reviews": 103, "insured": 3.0, "tax": "5000"}, "watch"),  # staff at the median
+        ({"reviews": 103, "insured": 4.0, "tax": "5000"}, "not_flagged"),  # more staff
+        ({"reviews": 101, "insured": 0.0, "tax": "5000"}, "not_flagged"),  # not busy
+        ({"reviews": 103, "insured": 0.0, "tax": None}, "held"),
+    ],
+)
+def test_a_busy_company_with_both_gaps_is_a_lead_and_with_one_on_watch(stg_run, details, tier):
+    assert scores(stg_run, fact(SUBJECT, **details), *PEERS, columns="tier")[SUBJECT] == (tier,)
+
+
+def test_leads_come_first_then_watch_each_by_the_euro_gap_to_the_peers_tax(stg_run):
+    flagged = [  # watch with the largest gap, then three leads, two with the same gap
+        fact(304100001, reviews=104, insured=3.0, tax="1000"),
+        fact(304100004, reviews=104, insured=0.0, tax="9000"),
+        fact(304100002, reviews=104, insured=0.0, tax="9000"),
+        fact(304100003, reviews=104, insured=0.0, tax="5000"),
+    ]
+    scored = scores(stg_run, *flagged, *PEERS, columns="tier, rank, tax_gap_eur")
+    assert [scored[code] for code in (304100003, 304100002, 304100004, 304100001)] == [
+        ("lead", 1, 25000.0),
+        ("lead", 2, 21000.0),  # a tie goes by code
+        ("lead", 3, 21000.0),
+        ("watch", 4, 29000.0),
+    ]
+    assert {scored[code][:2] for code in scored if code >= 304200000} == {("not_flagged", None)}
+
+
+def test_the_peers_medians_are_those_of_the_chosen_peers(stg_run):
+    tercile = [fact(304200000 + n, reviews=n, insured=n, tax=str(1000 + 100 * n)) for n in range(9)]
+    others = [fact(304300000 + n, reviews=100 + n, insured=9.0, tax="9000") for n in range(17)]
+    score = scores(
+        stg_run,
+        fact(SUBJECT, reviews=5),
+        *tercile,
+        *others,
+        columns="peer_group, peers, peer_median_staff, peer_median_tax",
+    )[SUBJECT]
+    assert score == ("review tercile", 8, 3.5, 1350.0)  # medians of the eight quietest
+
+
+@pytest.mark.parametrize(
+    ("breakage", "check"),
+    [
+        (  # a held company, not judged busy
+            "UPDATE mart.scores SET tier = 'lead', hold_reason = NULL WHERE tier = 'held'",
+            "mart_leads_busy_with_both_gaps",
+        ),
+        (  # a busy company with a staff gap only
+            "UPDATE mart.scores SET tier = 'lead' WHERE tier = 'watch'",
+            "mart_leads_busy_with_both_gaps",
+        ),
+        ("UPDATE mart.scores SET hold_reason = NULL", "mart_holds_have_a_reason"),
+        ("UPDATE mart.scores SET tier = 'not_flagged'", "mart_holds_have_a_reason"),
+    ],
+)
+def test_the_scores_checks_stop_the_build(stg_run, breakage, check):
+    watch = fact(304100002, reviews=104, insured=0.0, tax="30000")
+    scores(stg_run, fact(SUBJECT, closed=True), watch, *PEERS)
+    stg_run.warehouse.con.execute(breakage)
+    with pytest.raises(DataQualityError, match=check):
         stg_run.warehouse.run_checks(stg_run.run, "mart")
