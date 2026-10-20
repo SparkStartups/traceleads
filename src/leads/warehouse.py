@@ -45,6 +45,10 @@ def ref_tables() -> dict[str, list[dict[str, object]]]:
             for category in CATEGORIES
             for activity_class in category.activity_classes
         ],
+        "category_explanations": [
+            {"category": category.key, "explanation": category.explanation}
+            for category in CATEGORIES
+        ],
         "generic_words": [{"word": word} for word in generic_words()],
         "legal_forms": [asdict(form) for form in LEGAL_FORMS],
         "city": [{"name": CITY} | asdict(CITY_BOUNDS)],

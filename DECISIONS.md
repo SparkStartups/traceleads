@@ -68,8 +68,9 @@ churn every month.
 places are all closed, it was registered after January of the tax year (it paid tax for only part
 of it), it has too few peers, or VMI has no row for it: VMI leaves out some real payers, so a
 missing row is not read as zero. A missing Sodra row is zero, because Sodra lists every employer.
-Each flagged company shows the innocent explanations the data makes plausible: an MB or IĮ owner
-off the payroll, a young company, several places, dentists billing through their own companies.
+Each company shows the innocent explanations the data makes plausible: an MB or IĮ owner off
+the payroll, a young company, several places, dentists billing through their own companies,
+nobody insured and almost no tax (it may no longer run the place).
 
 **9. Owners' names stay out.** An individual enterprise (IĮ) is one person's business. The
 snapshot keeps only the trade name in quotes from its name, and drops that too when it holds the

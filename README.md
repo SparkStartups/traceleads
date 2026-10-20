@@ -216,6 +216,11 @@ has no known tax. In October that is 157 companies, 153 of them with a tax row.
   tax.
 - **Held, not judged,** with the reason shown: every place closed, registered after January of
   the tax year, no VMI record (a missing row is not zero), too few peers.
+- **Innocent explanations,** shown with every company, to rule out first: owner-operated (the
+  staff counts one owner; more may work off the payroll), registered in the tax year or the
+  year before (it was among its first years), several places (peers run one), the category's own
+  (dentists often bill through their own companies), nobody insured with under 1000 € of tax (it
+  may no longer run the place).
 
 `mart.scores` holds each company's tier (`lead`, `watch`, `not_flagged` or `held`), its hold reason,
 and, unless it was held before its peers were counted, its peer group, number of peers, whether it
@@ -232,7 +237,8 @@ reviews, and a gap at a third of the peers' median.
 | Held | 8: 3 without a tax record, 2 registered after January 2025, 3 owner-operated cafés with 2 peers each |
 
 Car repair shops and dental clinics that are not owner-operated are compared within their review
-tercile; the others across their category.
+tercile; the others across their category. Of the flagged companies, only the three dental clinics
+carry an explanation; none is owner-operated, young or runs several places.
 
 ## Trusting the list
 

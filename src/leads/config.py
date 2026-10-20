@@ -57,13 +57,14 @@ class Settings:
 @dataclass(frozen=True)
 class Category:
     """A business category: the Lithuanian words Google Maps is searched for it with, the Google
-    categories of the places that belong to it, and the activity classes (EVRK) of the companies
-    that run them."""
+    categories of the places that belong to it, the activity classes (EVRK) of the companies that
+    run them, and an innocent explanation shown with each of those companies, if it has one."""
 
     key: str
     keywords: tuple[str, ...]
     google_categories: tuple[str, ...]
     activity_classes: tuple[str, ...]
+    explanation: str | None = None
 
 
 CATEGORIES = (
@@ -107,6 +108,7 @@ CATEGORIES = (
         keywords=("odontologijos klinika",),
         google_categories=("Odontologijos klinika", "Stomatologas", "Gydytojas odontologas"),
         activity_classes=("86.23",),  # dental practice
+        explanation="dentists often bill through their own companies",
     ),
 )
 CITY = "Vilnius"
@@ -199,12 +201,23 @@ class Scoring:
     """How a company is judged. It is compared with at least ``min_peers`` peers of its category
     and legal-form group, or held; with its review tercile's alone when that leaves at least
     ``min_tercile_peers``. It is busy with at least its category's median reviews and
-    ``min_reviews``; a staff or tax gap is a figure at most ``gap_ratio`` of the peers' median."""
+    ``min_reviews``; a staff or tax gap is a figure at most ``gap_ratio`` of the peers' median.
+    It carries an innocent explanation when registered in its tax year or at most ``young_months``
+    months before it, or with nobody insured and tax under ``little_tax`` euros."""
 
     min_peers: int
     min_tercile_peers: int
     min_reviews: int
     gap_ratio: float
+    young_months: int
+    little_tax: int
 
 
-SCORING = Scoring(min_peers=5, min_tercile_peers=8, min_reviews=50, gap_ratio=1 / 3)
+SCORING = Scoring(
+    min_peers=5,
+    min_tercile_peers=8,
+    min_reviews=50,
+    gap_ratio=1 / 3,
+    young_months=12,
+    little_tax=1000,
+)

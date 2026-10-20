@@ -341,3 +341,47 @@ def test_the_scores_checks_stop_the_build(stg_run, breakage, check):
     stg_run.warehouse.con.execute(breakage)
     with pytest.raises(DataQualityError, match=check):
         stg_run.warehouse.run_checks(stg_run.run, "mart")
+
+
+OWNER = "owner-operated: one owner counted; more may work off the payroll"
+QUIET = "nobody insured and almost no tax: it may no longer run the place"
+
+
+@pytest.mark.parametrize(
+    ("details", "explanations"),
+    [
+        ({}, []),
+        ({"owner_operated": True}, [OWNER]),
+        ({"reg_date": "2024-01-01"}, ["registered in 2024-01, so 2025 was among its first years"]),
+        ({"reg_date": "2023-12-31"}, []),  # over 12 months before the tax year
+        ({"reg_date": "2025-12-31"}, ["registered in 2025-12, so 2025 was among its first years"]),
+        ({"reg_date": "2026-01-01"}, []),  # after the tax year
+        ({"places": 2}, ["runs 2 places; peers run one"]),
+        ({"category": "dental_clinics"}, ["dentists often bill through their own companies"]),
+        ({"insured": 0.0, "tax": "999.99"}, [QUIET]),
+        ({"insured": 0.0, "tax": "1000"}, []),
+        ({"insured": 0.0, "tax": None}, []),  # a missing VMI row is not almost no tax
+        ({"insured": 0.33, "tax": "0"}, []),
+        ({"owner_operated": True, "places": 3}, [OWNER, "runs 3 places; peers run one"]),
+    ],
+    ids=[
+        "none",
+        "owner",
+        "young",
+        "a-year-before",
+        "in-the-tax-year",
+        "after-the-tax-year",
+        "places",
+        "dental",
+        "quiet",
+        "quiet-at-1000",
+        "quiet-no-tax-record",
+        "someone-insured",
+        "several",
+    ],
+)
+def test_a_company_carries_the_innocent_explanations_its_data_makes_plausible(
+    stg_run, details, explanations
+):
+    scored = scores(stg_run, fact(SUBJECT, **details), columns="explanations")
+    assert scored[SUBJECT] == (explanations,)

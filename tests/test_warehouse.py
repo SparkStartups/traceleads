@@ -55,6 +55,10 @@ def test_the_ref_tables_hold_the_configuration_once(tmp_path, sql_dir):
     assert file_rows(path, classes) == [
         (category.key, code) for category in CATEGORIES for code in category.activity_classes
     ]
+    explanations = "SELECT category, explanation FROM ref.category_explanations"
+    assert file_rows(path, explanations) == [
+        (category.key, category.explanation) for category in CATEGORIES
+    ]
     assert file_rows(path, "SELECT * FROM ref.matching") == [astuple(MATCHING)]
     assert file_rows(path, "SELECT * FROM ref.scoring") == [astuple(SCORING)]
 

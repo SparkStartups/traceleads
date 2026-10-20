@@ -3,7 +3,8 @@
 -- operated or not), run one place and are not closed, young or without a tax record, the company
 -- left out: the peers of its review tercile when that leaves enough of them, else its category's.
 -- A busy company declaring staff and tax at or below a share of its peers' medians is a lead; one
--- of the two puts it on watch, unless its other figure is above the peers' median.
+-- of the two puts it on watch, unless its other figure is above the peers' median. Every company
+-- carries the innocent explanations its data makes plausible, to rule out before acting on it.
 CREATE TABLE IF NOT EXISTS mart.scores (
     snapshot_month          DATE    NOT NULL,
     ja_kodas                INTEGER NOT NULL,
@@ -21,7 +22,8 @@ CREATE TABLE IF NOT EXISTS mart.scores (
     peer_median_tax         DOUBLE,
     tax_ratio               DOUBLE,
     tax_gap                 BOOLEAN,
-    tax_gap_eur             DOUBLE             -- the peers' median tax minus the company's
+    tax_gap_eur             DOUBLE,            -- the peers' median tax minus the company's
+    explanations            VARCHAR[] NOT NULL
 );
 
 DELETE FROM mart.scores WHERE snapshot_month = getvariable('snapshot_month');
@@ -123,6 +125,25 @@ SELECT
     scored.peer_median_tax,
     scored.tax_ratio,
     scored.tax_gap,
-    scored.tax_gap_eur
+    scored.tax_gap_eur,
+    list_filter(
+        [
+            CASE WHEN companies.owner_operated
+                THEN 'owner-operated: one owner counted; more may work off the payroll' END,
+            CASE WHEN companies.reg_date BETWEEN
+                    make_date(companies.tax_year, 1, 1) - to_months(scoring.young_months)
+                    AND make_date(companies.tax_year, 12, 31)
+                THEN 'registered in ' || strftime(companies.reg_date, '%Y-%m') || ', so '
+                    || companies.tax_year || ' was among its first years' END,
+            CASE WHEN companies.places > 1
+                THEN 'runs ' || companies.places || ' places; peers run one' END,
+            category_explanations.explanation,
+            CASE WHEN companies.insured_3m = 0 AND companies.tax < scoring.little_tax
+                THEN 'nobody insured and almost no tax: it may no longer run the place' END
+        ],
+        lambda explanation: explanation IS NOT NULL
+    )
 FROM companies
-LEFT JOIN scored USING (ja_kodas);
+LEFT JOIN scored USING (ja_kodas)
+LEFT JOIN ref.category_explanations USING (category)
+CROSS JOIN ref.scoring;
