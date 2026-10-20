@@ -1,11 +1,12 @@
 -- One row per place in scope: the company it is linked to, or why it is not. The first rule its
 -- candidates meet decides: one company under it gives a link of the rule's tier, several send the
--- place to review without a company, and none leaves it unmatched.
+-- place to review without a company, and none leaves it unmatched. A link a person labelled wrong
+-- is rejected, so it is never scored.
 CREATE TABLE IF NOT EXISTS int.links (
     snapshot_month DATE    NOT NULL,
     cid            UBIGINT NOT NULL,
     ja_kodas       INTEGER,           -- none when unmatched, or when the rule found several
-    tier           VARCHAR NOT NULL,  -- automatic, review or unmatched
+    tier           VARCHAR NOT NULL,  -- automatic, review, rejected or unmatched
     rule           VARCHAR,           -- the deciding rule; none when unmatched
     candidates     INTEGER NOT NULL   -- companies the deciding rule found
 );
@@ -36,6 +37,14 @@ SELECT
     decisions.ja_kodas,
     CASE
         WHEN decisions.cid IS NULL THEN 'unmatched'
+        WHEN EXISTS (
+            SELECT 1
+            FROM stg.match_labels AS labels
+            WHERE labels.snapshot_month = places.snapshot_month
+                AND labels.cid = places.cid
+                AND labels.ja_kodas = decisions.ja_kodas
+                AND NOT labels.correct
+        ) THEN 'rejected'
         WHEN decisions.candidates = 1 THEN decisions.tier
         ELSE 'review'
     END,

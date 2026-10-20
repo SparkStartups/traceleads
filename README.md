@@ -186,6 +186,15 @@ runs the place.
 Of the automatic links, 69 are by brand and building, 95 by brand and activity and 13 by core name
 and building.
 
+Labels in `data/labels/match_labels.csv` say whether a company really runs a place: one row per
+link, with `selection` (`random` for a link drawn to measure its rule, `flagged` for a flagged
+company's link checked by hand) and `correct` (`yes` or `no`); rows without a verdict are left out.
+A link labelled wrong is `rejected`: it is never scored and leaves the review queue.
+`mart.match_precision` gives each rule's precision on its random labels with a 95% Wilson interval;
+flagged links stay out of it, since they were not drawn at random. A label whose selection or
+verdict cannot be read stops the build, and a label whose link the rules no longer make is reported.
+The file has only its header until the October sample is labelled.
+
 ## Busy, and quiet on paper
 
 - **Unit:** the company, with the reviews of all its automatically linked places summed.

@@ -1,6 +1,9 @@
+from contextlib import nullcontext
+
 import pytest
 
 from leads.checks import DataQualityError
+from leads.config import Settings
 
 MONTH = "getvariable('snapshot_month')"
 
@@ -306,3 +309,132 @@ def test_a_repeated_link_stops_the_build(stg_run):
     stg_run.warehouse.con.execute("INSERT INTO int.links SELECT * FROM int.links")
     with pytest.raises(DataQualityError, match="int_unique_keys"):
         stg_run.warehouse.run_checks(stg_run.run, "int")
+
+
+# Hand labels and each rule's precision
+
+
+def label(selection: str, ja_kodas: int, correct: bool, place: str = "Cozy") -> str:
+    """Return SQL labelling the link of ``place`` to ``ja_kodas``."""
+    cid = f"(SELECT cid FROM stg.google_listings WHERE name = '{place}')"
+    return (
+        f"INSERT INTO stg.match_labels VALUES ({MONTH}, {cid}, {ja_kodas}, '{selection}', "
+        f"{correct})"
+    )
+
+
+def read_labels(stg_run, project_root, rows: str) -> None:
+    """Write ``rows`` under the labels file's header and load the stg layer again."""
+    path = Settings(project_root).labels_dir / "match_labels.csv"
+    path.write_text(path.read_text(encoding="utf-8") + rows, encoding="utf-8")
+    stg_run.warehouse.run_layer(stg_run.run, "stg")
+
+
+def test_labels_are_read_and_rows_without_a_verdict_left_out(stg_run, project_root):
+    read_labels(
+        stg_run,
+        project_root,
+        "random,11,304000001,brand_and_building,Cozy,UAB Cozy,yes\n"
+        " flagged ,22,304000002,brand_and_activity,Moss,UAB Moss, no \n"
+        "random,33,304000003,brand_and_building,Grey,UAB Grey,\n",  # not labelled yet
+    )
+    assert stg_run.rows("SELECT cid, ja_kodas, selection, correct FROM stg.match_labels") == [
+        (11, 304000001, "random", True),
+        (22, 304000002, "flagged", False),
+    ]
+
+
+@pytest.mark.parametrize(
+    "row",
+    [
+        "flagged,44,304000004,brand_and_building,Gabi,UAB Gabi,maybe\n",
+        "sample,55,304000005,brand_and_building,Balzac,UAB Balzac,yes\n",
+    ],
+    ids=["label", "selection"],
+)
+def test_an_unreadable_label_stops_the_build(stg_run, project_root, row):
+    read_labels(stg_run, project_root, row)
+    with pytest.raises(DataQualityError, match="stg_match_labels"):
+        stg_run.warehouse.run_checks(stg_run.run, "stg")
+
+
+@pytest.mark.parametrize(
+    ("second", "outcome"),
+    [
+        ("random", pytest.raises(DataQualityError, match="stg_unique_keys")),
+        ("flagged", nullcontext()),
+    ],
+)
+def test_a_link_is_labelled_once_per_selection(stg_run, second, outcome):
+    stg_run.warehouse.con.execute(label("random", 304100001, True))
+    stg_run.warehouse.con.execute(label(second, 304100001, True))
+    with outcome:
+        stg_run.warehouse.run_checks(stg_run.run, "stg")
+
+
+@pytest.mark.parametrize(
+    ("labels", "tier"),
+    [
+        ([], "automatic"),
+        ([("random", True)], "automatic"),
+        ([("random", False)], "rejected"),
+        ([("random", True), ("flagged", False)], "rejected"),  # one wrong label is enough
+    ],
+)
+def test_a_link_labelled_wrong_is_rejected(stg_run, labels, tier):
+    stg_run.build_int(
+        *register([('UAB "Cozy"', KAUNAS, "561100")]),
+        *(label(selection, 304100001, correct) for selection, correct in labels),
+    )
+    assert links(stg_run)["Cozy"] == ('UAB "Cozy"', tier, "brand_and_activity", 1)
+
+
+@pytest.mark.parametrize(("correct", "queued"), [(True, [("Kavinė Cozy Garden",)]), (False, [])])
+def test_a_review_link_labelled_wrong_leaves_the_review_queue(stg_run, correct, queued):
+    stg_run.build_int(
+        "UPDATE stg.google_listings SET name = 'Kavinė Cozy Garden' WHERE name = 'Cozy'",
+        *register([('UAB "Garden Fox"', COZY_STREET, "862300")]),
+        label("random", 304100001, correct, "Kavinė Cozy Garden"),
+    )
+    stg_run.warehouse.run_layer(stg_run.run, "mart")
+    assert stg_run.rows("SELECT place FROM mart.review_queue") == queued
+
+
+@pytest.mark.parametrize(
+    ("ja_kodas", "place"),
+    [(304100002, "Cozy"), (304100001, "Užupio kavinė")],
+    ids=["another-company", "another-place"],
+)
+def test_a_wrong_label_of_another_link_leaves_the_link(stg_run, ja_kodas, place):
+    stg_run.build_int(
+        *register([('UAB "Cozy"', KAUNAS, "561100")]),
+        label("random", ja_kodas, False, place),
+    )
+    assert links(stg_run)["Cozy"][1] == "automatic"
+
+
+def test_precision_counts_the_links_labelled_at_random_with_a_wilson_interval(stg_run):
+    stg_run.build_int()
+    for number in range(15):  # links of rule 1 to companies 1..15; the first 10 drawn at random
+        stg_run.warehouse.con.execute(
+            f"INSERT INTO int.links VALUES ({MONTH}, {number}, {number + 1}, 'automatic', "
+            f"'brand_and_building', 1); "
+            f"INSERT INTO stg.match_labels VALUES ({MONTH}, {number}, {number + 1}, "
+            f"'{'random' if number < 10 else 'flagged'}', {number != 0})"
+        )
+    stg_run.warehouse.con.execute(
+        # a place the rule sent to review with two candidates, and last month's labels
+        f"INSERT INTO int.links VALUES ({MONTH}, 99, NULL, 'review', 'brand_and_building', 2); "
+        f"INSERT INTO stg.match_labels SELECT * REPLACE ({MONTH} - INTERVAL 1 MONTH AS "
+        "snapshot_month) FROM stg.match_labels"
+    )
+    stg_run.warehouse.run_layer(stg_run.run, "mart")
+    assert stg_run.rows(
+        "SELECT places, linked, labelled, correct, precision, precision_low, precision_high "
+        f"FROM mart.match_precision WHERE rule = 'brand_and_building' AND snapshot_month = {MONTH}"
+    ) == [(16, 15, 10, 9, 0.9, 0.6, 0.98)]
+
+
+def test_a_label_whose_link_the_rules_no_longer_make_is_reported(stg_run):
+    stg_run.build_int(label("random", 304100001, True))  # no company 304100001 runs Cozy
+    assert stg_run.run_checks("int")["int_labels_current"] == ("warn", 1)

@@ -40,6 +40,11 @@ class Settings:
         """Return the folder ``month`` is built from."""
         return self.snapshots_dir / f"{month:{MONTH_FORMAT}}"
 
+    @property
+    def labels_dir(self) -> Path:
+        """Hand labels of links, read with every snapshot month."""
+        return self.root / "data" / "labels"
+
     def snapshot_months(self) -> list[date]:
         """Return the months with a snapshot, oldest first."""
         return sorted(

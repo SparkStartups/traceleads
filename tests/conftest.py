@@ -21,6 +21,7 @@ from leads.tracking import Run
 from leads.warehouse import META_SQL, Warehouse
 
 REPO_SQL_DIR = Path(__file__).resolve().parents[1] / "sql"
+REPO_LABELS_DIR = Settings(REPO_SQL_DIR.parent).labels_dir
 FIXTURES = Path(__file__).parent / "fixtures"
 # Real Google Maps renders, trimmed: a results list of 20 places, and the page of one place.
 LIST_PAGE = (FIXTURES / "maps_list.html").read_text(encoding="utf-8")
@@ -313,8 +314,9 @@ def lock_file(
 
 @pytest.fixture
 def project_root(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
-    """Return a working directory with the repository's SQL files."""
+    """Return a working directory with the repository's SQL files and link labels."""
     shutil.copytree(REPO_SQL_DIR, Settings(tmp_path).sql_dir)
+    shutil.copytree(REPO_LABELS_DIR, Settings(tmp_path).labels_dir)
     monkeypatch.chdir(tmp_path)
     return tmp_path
 
@@ -388,7 +390,9 @@ def stg_run(
     """Yield a warehouse and run, with the repository's ``stg`` built from the fixture snapshot."""
     settings = Settings(project_root)
     with (
-        Warehouse.open(project_root / "test.duckdb", settings.sql_dir, collected(month)) as opened,
+        Warehouse.open(
+            project_root / "test.duckdb", settings.sql_dir, collected(month), settings.labels_dir
+        ) as opened,
         Run.start(opened.con, month) as active,
     ):
         opened.run_layer(active, "stg")

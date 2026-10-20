@@ -23,3 +23,8 @@ SELECT 'stg.google_listings', query || ' ' || cid
 FROM stg.google_listings
 WHERE snapshot_month = getvariable('snapshot_month')
 GROUP BY query, cid HAVING count(*) > 1
+UNION ALL
+SELECT 'stg.match_labels', cid || ' ' || ja_kodas || ' ' || selection
+FROM stg.match_labels
+WHERE snapshot_month = getvariable('snapshot_month')
+GROUP BY cid, ja_kodas, selection HAVING count(*) > 1

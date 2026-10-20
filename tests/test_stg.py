@@ -85,6 +85,7 @@ def test_checks_pass_and_full_or_empty_lists_are_only_reported(stg_run):
     assert stg_run.run_checks("stg") == {
         "stg_company_codes": ("error", 0),
         "stg_google_queries": ("warn", 84),  # one full list, 83 pages without one
+        "stg_match_labels": ("error", 0),
         "stg_owner_names_hidden": ("error", 0),
         "stg_sodra_fresh": ("error", 0),
         "stg_sources_have_rows": ("error", 0),
@@ -158,7 +159,10 @@ def test_a_month_without_places_is_stopped_by_its_check(
     collect_month(settings, month)
     with (
         Warehouse.open(
-            project_root / "test.duckdb", settings.sql_dir, settings.snapshot_dir(month)
+            project_root / "test.duckdb",
+            settings.sql_dir,
+            settings.snapshot_dir(month),
+            settings.labels_dir,
         ) as warehouse,
         Run.start(warehouse.con, month) as run,
     ):

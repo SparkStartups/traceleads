@@ -191,6 +191,7 @@ def test_a_place_found_under_two_categories_takes_the_one_that_allows_it(stg_run
 def test_int_checks_pass_on_the_fixture_month(stg_run):
     stg_run.build_int()
     assert stg_run.run_checks("int") == {
+        "int_labels_current": ("warn", 0),
         "int_place_addresses": ("warn", 0),
         "int_places_in_scope": ("error", 0),
         "int_shared_brands": ("warn", 0),

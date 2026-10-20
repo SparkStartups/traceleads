@@ -70,7 +70,10 @@ def build() -> None:
             for month in months:
                 with (
                     Warehouse.open(
-                        working_copy, settings.sql_dir, settings.snapshot_dir(month)
+                        working_copy,
+                        settings.sql_dir,
+                        settings.snapshot_dir(month),
+                        settings.labels_dir,
                     ) as warehouse,
                     Run.start(warehouse.con, month) as run,
                 ):
