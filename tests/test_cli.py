@@ -24,11 +24,11 @@ def built_months(root: Path) -> list[date]:
 
 
 @pytest.fixture
-def snapshot(project_root: Path) -> Callable[[date], Path]:
+def snapshot(bare_project_root: Path) -> Callable[[date], Path]:
     """Create a month's snapshot folder holding one file that names the month."""
 
     def make(month: date) -> Path:
-        folder = Settings(project_root).snapshot_dir(month)
+        folder = Settings(bare_project_root).snapshot_dir(month)
         folder.mkdir(parents=True)
         (folder / "month.csv").write_text(f"month\n{month}\n", encoding="utf-8")
         return folder
@@ -82,30 +82,30 @@ def test_collect_reports_a_source_that_changed(project_root, raw_sources, caplog
     assert "stat_kodas" in caplog.text
 
 
-def test_build_rebuilds_every_snapshot_month_oldest_first(project_root, snapshot):
+def test_build_rebuilds_every_snapshot_month_oldest_first(bare_project_root, snapshot):
     for month in (OCTOBER, SEPTEMBER):
         snapshot(month)
     result = runner.invoke(app, ["build"])
     assert result.exit_code == 0, result.output
-    assert built_months(project_root) == [SEPTEMBER, OCTOBER]
+    assert built_months(bare_project_root) == [SEPTEMBER, OCTOBER]
 
 
-def test_each_month_s_models_read_that_month_s_snapshot(project_root, snapshot):
+def test_each_month_s_models_read_that_month_s_snapshot(bare_project_root, snapshot):
     for month in (SEPTEMBER, OCTOBER):
         snapshot(month)
-    (project_root / "sql" / "stg").mkdir()
-    (project_root / "sql" / "stg" / "10_read.sql").write_text(
+    (bare_project_root / "sql" / "stg").mkdir()
+    (bare_project_root / "sql" / "stg" / "10_read.sql").write_text(
         "CREATE TABLE IF NOT EXISTS stg.seen (built DATE, read DATE);"
         "INSERT INTO stg.seen SELECT getvariable('snapshot_month'), month FROM 'month.csv';",
         encoding="utf-8",
     )
     assert runner.invoke(app, ["build"]).exit_code == 0
-    with duckdb.connect(Settings(project_root).warehouse_path, read_only=True) as con:
+    with duckdb.connect(Settings(bare_project_root).warehouse_path, read_only=True) as con:
         seen = con.execute("SELECT built, read FROM stg.seen ORDER BY built").fetchall()
     assert seen == [(SEPTEMBER, SEPTEMBER), (OCTOBER, OCTOBER)]
 
 
-def test_layers_run_in_order_stg_int_mart(project_root, snapshot):
+def test_layers_run_in_order_stg_int_mart(bare_project_root, snapshot):
     snapshot(OCTOBER)
     models = {
         "stg": "CREATE TABLE stg.a AS SELECT 1 AS x;",
@@ -113,36 +113,36 @@ def test_layers_run_in_order_stg_int_mart(project_root, snapshot):
         "mart": "CREATE TABLE mart.c AS SELECT x + 1 AS x FROM int.b;",
     }
     for layer, sql in models.items():
-        (project_root / "sql" / layer).mkdir()
-        (project_root / "sql" / layer / "10_model.sql").write_text(sql, encoding="utf-8")
+        (bare_project_root / "sql" / layer).mkdir()
+        (bare_project_root / "sql" / layer / "10_model.sql").write_text(sql, encoding="utf-8")
     result = runner.invoke(app, ["build"])
     assert result.exit_code == 0, result.output
-    with duckdb.connect(Settings(project_root).warehouse_path, read_only=True) as con:
+    with duckdb.connect(Settings(bare_project_root).warehouse_path, read_only=True) as con:
         assert con.execute("SELECT x FROM mart.c").fetchall() == [(3,)]
 
 
-def test_build_without_any_snapshot_stops(project_root, caplog):
+def test_build_without_any_snapshot_stops(bare_project_root, caplog):
     result = runner.invoke(app, ["build"])
     assert result.exit_code == 1
     assert "run `leads collect` first" in caplog.text
-    assert not Settings(project_root).warehouse_path.exists()
+    assert not Settings(bare_project_root).warehouse_path.exists()
 
 
-def test_a_build_replaces_the_warehouse_with_the_snapshots_there_are(project_root, snapshot):
+def test_a_build_replaces_the_warehouse_with_the_snapshots_there_are(bare_project_root, snapshot):
     for month in (SEPTEMBER, OCTOBER):
         snapshot(month)
     assert runner.invoke(app, ["build"]).exit_code == 0
-    shutil.rmtree(Settings(project_root).snapshot_dir(SEPTEMBER))
+    shutil.rmtree(Settings(bare_project_root).snapshot_dir(SEPTEMBER))
     assert runner.invoke(app, ["build"]).exit_code == 0
-    assert built_months(project_root) == [OCTOBER]
+    assert built_months(bare_project_root) == [OCTOBER]
 
 
-def test_a_failed_model_stops_the_build_without_publishing(project_root, snapshot, caplog):
+def test_a_failed_model_stops_the_build_without_publishing(bare_project_root, snapshot, caplog):
     snapshot(SEPTEMBER)
     assert runner.invoke(app, ["build"]).exit_code == 0
     snapshot(OCTOBER)
-    (project_root / "sql" / "mart").mkdir()
-    (project_root / "sql" / "mart" / "10_broken.sql").write_text(
+    (bare_project_root / "sql" / "mart").mkdir()
+    (bare_project_root / "sql" / "mart" / "10_broken.sql").write_text(
         "SELECT * FROM nope;", encoding="utf-8"
     )
 
@@ -152,18 +152,18 @@ def test_a_failed_model_stops_the_build_without_publishing(project_root, snapsho
     assert "2026-09 mart/10_broken.sql failed after" in caplog.text
     assert "Table with name nope does not exist" in caplog.text
     assert "the published warehouse was not changed" in caplog.text
-    assert built_months(project_root) == [SEPTEMBER]
+    assert built_months(bare_project_root) == [SEPTEMBER]
 
 
-def test_a_failed_error_check_stops_the_build_after_its_layer(project_root, snapshot, caplog):
+def test_a_failed_error_check_stops_the_build_after_its_layer(bare_project_root, snapshot, caplog):
     for month in (SEPTEMBER, OCTOBER):
         snapshot(month)
-    (project_root / "sql" / "dq").mkdir()
-    (project_root / "sql" / "dq" / "stg_always_fails.sql").write_text(
+    (bare_project_root / "sql" / "dq").mkdir()
+    (bare_project_root / "sql" / "dq" / "stg_always_fails.sql").write_text(
         "SELECT 1 AS x", encoding="utf-8"
     )
-    (project_root / "sql" / "int").mkdir()
-    (project_root / "sql" / "int" / "10_model.sql").write_text(
+    (bare_project_root / "sql" / "int").mkdir()
+    (bare_project_root / "sql" / "int" / "10_model.sql").write_text(
         "CREATE TABLE int.t AS SELECT 1 AS x;", encoding="utf-8"
     )
 
@@ -171,8 +171,8 @@ def test_a_failed_error_check_stops_the_build_after_its_layer(project_root, snap
 
     assert result.exit_code == 1
     assert "failed stg checks: stg_always_fails; the published warehouse" in caplog.text
-    assert not Settings(project_root).warehouse_path.exists()
-    failed_build = Settings(project_root).warehouse_path.with_name("leads.building.duckdb")
+    assert not Settings(bare_project_root).warehouse_path.exists()
+    failed_build = Settings(bare_project_root).warehouse_path.with_name("leads.building.duckdb")
     with duckdb.connect(failed_build, read_only=True) as con:
         failed = con.execute(
             "SELECT check_name FROM meta.dq_results WHERE failing_rows > 0"
@@ -186,9 +186,22 @@ def test_a_failed_error_check_stops_the_build_after_its_layer(project_root, snap
     assert int_tables == (0,)  # the build stopped after the stg checks
 
 
-def test_build_reports_a_warehouse_left_open(project_root, snapshot, lock_file, caplog):
+def test_build_loads_each_collected_month_into_staging(project_root, collected):
+    for month in (SEPTEMBER, OCTOBER):
+        collected(month)
+    result = runner.invoke(app, ["build"])
+    assert result.exit_code == 0, result.output  # every check passes within its own month
+    per_month = "SELECT snapshot_month, count(*) FROM stg.{} GROUP BY ALL ORDER BY ALL"
+    with duckdb.connect(Settings(project_root).warehouse_path, read_only=True) as con:
+        entities = con.execute(per_month.format("jar_entities")).fetchall()
+        listings = con.execute(per_month.format("google_listings")).fetchall()
+    assert entities == [(SEPTEMBER, 3), (OCTOBER, 3)]
+    assert listings == [(SEPTEMBER, 20), (OCTOBER, 20)]
+
+
+def test_build_reports_a_warehouse_left_open(bare_project_root, snapshot, lock_file, caplog):
     snapshot(SEPTEMBER)
-    lock_file(Settings(project_root).warehouse_path, times=PUBLISH_ATTEMPTS)
+    lock_file(Settings(bare_project_root).warehouse_path, times=PUBLISH_ATTEMPTS)
     result = runner.invoke(app, ["build"])
     assert result.exit_code == 1
     assert "close it and rerun; the published warehouse was not changed" in caplog.text

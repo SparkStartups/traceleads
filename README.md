@@ -8,8 +8,9 @@ similar businesses. Every lead carries the listing and the official records it r
 numbers behind its score, and the innocent explanations to rule out first. These are leads for a
 closer look, not accusations.
 
-**Status: collect.** The system is built in stages: infrastructure, collect, load, transform,
-publish, the app. The infrastructure and collection are built, and October 2026 is collected.
+**Status: load.** The system is built in stages: infrastructure, collect, load, transform,
+publish, the app. The infrastructure, collection and staging tables are built, and October 2026
+is collected.
 Each section below is updated when its part is built; the results of a real run are added at the
 end.
 
@@ -105,6 +106,23 @@ rule. It runs after its layer's models, and its count and first five rows are re
 | `mart` | per-company facts and scores, the lead list, and report views |
 | `meta` | build runs and data-quality results |
 
+### Loading: the `stg` tables
+
+Each staging table holds one source's rows for the month, typed, with every column selected by
+name, so a renamed source column fails the build.
+
+| Table | One row per |
+|---|---|
+| `stg.source_files` | raw file behind the month's snapshot: URL, SHA-256, download time, the data's latest period |
+| `stg.jar_entities` | registered entity: code, name, registered address, registration date, legal form, status |
+| `stg.sodra_monthly` | company and month: insured people and the six-digit activity code; insurers without a Lithuanian company code are left out |
+| `stg.vmi_taxes` | company and year: trade name, months covered, amount; when a refresh leaves an earlier month's row, only the latest counts |
+| `stg.google_listings` | place and query: name, Google category, address, coordinates, review count, closed flag |
+
+Their checks stop the build when a source has no rows, a key repeats, a company code does not have
+nine digits, or Sodra's latest month is more than three months old. A results list that is empty
+or full (20 places, so more may have been left out) is reported as a warning.
+
 ## Linking a place to a company
 
 A Google listing has no company code, so the link is inferred from names and addresses. Names are
@@ -185,7 +203,7 @@ make collect  # download the current month's sources and write its snapshot (nee
 make build    # rebuild the warehouse from every snapshot month
 ```
 
-CI runs `make lint test` on every push.
+CI runs `make lint test build` on every push, so every push also builds the committed snapshots.
 
 ## Layout
 

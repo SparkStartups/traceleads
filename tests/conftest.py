@@ -13,7 +13,7 @@ import pytest
 
 from leads import tracking
 from leads import warehouse as warehouse_module
-from leads.collect import fetch, jar, sodra, vmi_taxes
+from leads.collect import collect_month, fetch, jar, sodra, vmi_taxes
 from leads.collect.google_maps import API_KEY_VARIABLE, QUERIES
 from leads.config import Settings
 from leads.tracking import Run
@@ -25,6 +25,8 @@ FIXTURES = Path(__file__).parent / "fixtures"
 LIST_PAGE = (FIXTURES / "maps_list.html").read_text(encoding="utf-8")
 PLACE_PAGE = (FIXTURES / "maps_place.html").read_text(encoding="utf-8")
 NO_LIST_PAGE = '<html><body><div role="main"></div></body></html>'  # rendered, without places
+# The fixture month's results list, with Cozy temporarily closed instead of closing at 01.
+MONTH_LIST_PAGE = LIST_PAGE.replace("Uždaroma 01", "Laikinai uždaryta")
 
 JAR_LINES = (
     "ja_kodas|ja_pavadinimas|adresas|ja_reg_data|form_kodas|form_pavadinimas|stat_kodas|"
@@ -119,7 +121,8 @@ class RawSources:
         """Return the rendered page of each query by file name: one list of places, the rest
         rendered without one, which keeps the fixture month small."""
         return {
-            query.file_name: LIST_PAGE if query == QUERIES[0] else NO_LIST_PAGE for query in QUERIES
+            query.file_name: MONTH_LIST_PAGE if query == QUERIES[0] else NO_LIST_PAGE
+            for query in QUERIES
         }
 
     def write(self, settings: Settings) -> None:
@@ -304,3 +307,54 @@ def project_root(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     shutil.copytree(REPO_SQL_DIR, Settings(tmp_path).sql_dir)
     monkeypatch.chdir(tmp_path)
     return tmp_path
+
+
+@pytest.fixture
+def bare_project_root(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    """Return a working directory whose SQL is only the run-metadata schema."""
+    Settings(tmp_path).sql_dir.mkdir()
+    shutil.copy(REPO_SQL_DIR / META_SQL, Settings(tmp_path).sql_dir)
+    monkeypatch.chdir(tmp_path)
+    return tmp_path
+
+
+@pytest.fixture(scope="session")
+def snapshots(tmp_path_factory: pytest.TempPathFactory) -> Callable[[date], Path]:
+    """Return the snapshot of a month's fixture sources, collected offline once per session."""
+    made: dict[date, Path] = {}
+
+    def snapshot(month: date) -> Path:
+        if month not in made:
+            settings = Settings(tmp_path_factory.mktemp("snapshot"))
+            RawSources(month).write(settings)
+            collect_month(settings, month)
+            made[month] = settings.snapshot_dir(month)
+        return made[month]
+
+    return snapshot
+
+
+@pytest.fixture
+def collected(project_root: Path, snapshots: Callable[[date], Path]) -> Callable[[date], Path]:
+    """Put a month's fixture snapshot in the project, as ``leads collect`` leaves it."""
+
+    def collect(month: date) -> Path:
+        target = Settings(project_root).snapshot_dir(month)
+        shutil.copytree(snapshots(month), target)
+        return target
+
+    return collect
+
+
+@pytest.fixture
+def stg_run(
+    project_root: Path, collected: Callable[[date], Path], month: date
+) -> Generator[tuple[Warehouse, Run]]:
+    """Yield a warehouse and run, with the repository's ``stg`` built from the fixture snapshot."""
+    settings = Settings(project_root)
+    with (
+        Warehouse.open(project_root / "test.duckdb", settings.sql_dir, collected(month)) as opened,
+        Run.start(opened.con, month) as active,
+    ):
+        opened.run_layer(active, "stg")
+        yield opened, active
