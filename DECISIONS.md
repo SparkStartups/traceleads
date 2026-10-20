@@ -54,8 +54,9 @@ weighted match score, with no labels to fit it and no meaning to an analyst.
 **7. Busy and quiet, measured against equally busy peers.** Busy is lifetime Google reviews at or
 above the category's median and at least 50. Quiet is measured twice, staff (average insured over
 Sodra's latest three months) and the last full year's taxes, each against the median of peers:
-single-place companies of the same category and legal-form group, within the same review tercile
-when it holds enough, the company itself left out. A gap is a third of the peers' median or less.
+single-place companies of the same category and legal-form group, not closed, young or without a
+tax record, within the same review tercile when it holds enough, the company itself left out. A
+gap is a third of the peers' median or less.
 Both gaps make a `lead`; one puts the company on `watch`, unless its other figure is above the
 peers' median. Leads are ordered by the euro gap to the peers' taxes, never called evaded tax.
 *Rejected:* a fixed reviews-per-employee norm, which ignores how categories differ; a trained

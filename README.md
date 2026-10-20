@@ -207,14 +207,22 @@ has no known tax. In October that is 157 companies, 153 of them with a tax row.
 - **Busy:** at least the category's median reviews, and at least 50.
 - **Declared:** staff is the average insured over Sodra's latest three months, plus one owner for
   an MB or IĮ; tax is VMI's amount for the last full year.
-- **Peers:** companies of the same category and legal-form group that run one place, the company
-  itself left out; within its review tercile when that leaves enough of them.
+- **Peers:** companies of the same category and legal-form group that run one place and are not
+  closed, young or without a tax record, the company itself left out; within its review tercile
+  when that leaves enough of them.
 - **Gap:** staff or tax at most a third of the peers' median.
 - **Status:** busy with both gaps is a `lead`; busy with one gap is `watch`, unless the other
   figure is above the peers' median. Leads come first, ordered by the euro gap to the peers'
   tax.
 - **Held, not judged,** with the reason shown: every place closed, registered after January of
   the tax year, no VMI record (a missing row is not zero), too few peers.
+
+`mart.scores` holds each company's hold reason and, unless it was held before its peers were
+counted, its peer group and number of peers: at least 5 in the category and legal-form group, and
+the review tercile when it alone leaves at least 8 (`ref.scoring`). In October, 149 of the 157
+companies are judged; 3 are held for no tax record, 2 as registered after January 2025, and 3
+owner-operated cafés for having 2 peers each. Car repair shops and dental clinics that are not
+owner-operated are compared within their review tercile; the others across their category.
 
 ## Trusting the list
 

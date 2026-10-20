@@ -5,7 +5,15 @@ from dataclasses import astuple
 import duckdb
 import pytest
 
-from leads.config import CATEGORIES, CITY, CITY_BOUNDS, LEGAL_FORMS, MATCHING, generic_words
+from leads.config import (
+    CATEGORIES,
+    CITY,
+    CITY_BOUNDS,
+    LEGAL_FORMS,
+    MATCHING,
+    SCORING,
+    generic_words,
+)
 from leads.tracking import Run
 from leads.warehouse import PUBLISH_ATTEMPTS, PublishError, Warehouse, publish_on_success
 
@@ -48,6 +56,7 @@ def test_the_ref_tables_hold_the_configuration_once(tmp_path, sql_dir):
         (category.key, code) for category in CATEGORIES for code in category.activity_classes
     ]
     assert file_rows(path, "SELECT * FROM ref.matching") == [astuple(MATCHING)]
+    assert file_rows(path, "SELECT * FROM ref.scoring") == [astuple(SCORING)]
 
 
 def test_model_files_are_numbered_and_ordered_per_layer(warehouse, write_model):

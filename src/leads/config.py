@@ -192,3 +192,16 @@ class Matching:
 
 
 MATCHING = Matching(rare_word_max_names=30, rare_word_min_letters=3)
+
+
+@dataclass(frozen=True)
+class Scoring:
+    """How many peers a company is compared with: at least ``min_peers`` in its category and
+    legal-form group, or it is held; its review tercile alone when that leaves at least
+    ``min_tercile_peers``."""
+
+    min_peers: int
+    min_tercile_peers: int
+
+
+SCORING = Scoring(min_peers=5, min_tercile_peers=8)

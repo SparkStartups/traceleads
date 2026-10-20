@@ -10,7 +10,15 @@ from typing import Self
 import duckdb
 
 from leads.checks import Check, DataQualityError, Severity
-from leads.config import CATEGORIES, CITY, CITY_BOUNDS, LEGAL_FORMS, MATCHING, generic_words
+from leads.config import (
+    CATEGORIES,
+    CITY,
+    CITY_BOUNDS,
+    LEGAL_FORMS,
+    MATCHING,
+    SCORING,
+    generic_words,
+)
 from leads.tracking import Run
 
 META_SQL = "meta.sql"
@@ -41,6 +49,7 @@ def ref_tables() -> dict[str, list[dict[str, object]]]:
         "legal_forms": [asdict(form) for form in LEGAL_FORMS],
         "city": [{"name": CITY} | asdict(CITY_BOUNDS)],
         "matching": [asdict(MATCHING)],
+        "scoring": [asdict(SCORING)],
     }
 
 
