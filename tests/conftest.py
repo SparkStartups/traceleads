@@ -21,7 +21,7 @@ from leads.tracking import Run
 from leads.warehouse import META_SQL, Warehouse
 
 REPO_SQL_DIR = Path(__file__).resolve().parents[1] / "sql"
-REPO_LABELS_DIR = Settings(REPO_SQL_DIR.parent).labels_dir
+REPO_LABELS = Settings(REPO_SQL_DIR.parent).labels_dir / "match_labels.csv"
 FIXTURES = Path(__file__).parent / "fixtures"
 # Real Google Maps renders, trimmed: a results list of 20 places, and the page of one place.
 LIST_PAGE = (FIXTURES / "maps_list.html").read_text(encoding="utf-8")
@@ -314,9 +314,13 @@ def lock_file(
 
 @pytest.fixture
 def project_root(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
-    """Return a working directory with the repository's SQL files and link labels."""
+    """Return a working directory with the repository's SQL files and the header of its link
+    labels: the fixture months are labelled by the tests, never by the real labels."""
     shutil.copytree(REPO_SQL_DIR, Settings(tmp_path).sql_dir)
-    shutil.copytree(REPO_LABELS_DIR, Settings(tmp_path).labels_dir)
+    labels = Settings(tmp_path).labels_dir / REPO_LABELS.name
+    labels.parent.mkdir(parents=True)
+    header = REPO_LABELS.read_text(encoding="utf-8").splitlines(keepends=True)[0]
+    labels.write_text(header, encoding="utf-8", newline="")
     monkeypatch.chdir(tmp_path)
     return tmp_path
 
