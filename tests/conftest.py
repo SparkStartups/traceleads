@@ -323,9 +323,16 @@ def project_root(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
 
 @pytest.fixture
 def bare_project_root(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
-    """Return a working directory whose SQL is only the run-metadata schema."""
-    Settings(tmp_path).sql_dir.mkdir()
+    """Return a working directory whose SQL is only the run-metadata schema and an empty lead
+    list for the build to write."""
+    mart = Settings(tmp_path).sql_dir / "mart"
+    mart.mkdir(parents=True)
     shutil.copy(REPO_SQL_DIR / META_SQL, Settings(tmp_path).sql_dir)
+    (mart / "90_leads_export.sql").write_text(
+        "CREATE OR REPLACE VIEW mart.leads_export AS "
+        "SELECT DATE '2026-10-01' AS snapshot_month, 1 AS rank WHERE false",
+        encoding="utf-8",
+    )
     monkeypatch.chdir(tmp_path)
     return tmp_path
 

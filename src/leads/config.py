@@ -40,6 +40,10 @@ class Settings:
         """Return the folder ``month`` is built from."""
         return self.snapshots_dir / f"{month:{MONTH_FORMAT}}"
 
+    def leads_csv(self, month: date) -> Path:
+        """Return the lead list ``month``'s build writes."""
+        return self.root / "output" / f"{month:{MONTH_FORMAT}}" / "leads.csv"
+
     @property
     def labels_dir(self) -> Path:
         """Hand labels of links, read with every snapshot month."""

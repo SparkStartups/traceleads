@@ -12,7 +12,7 @@ from leads.collect import collect_month
 from leads.collect.fetch import FetchError
 from leads.config import MONTH_FORMAT, Settings, current_month
 from leads.tracking import Run
-from leads.warehouse import PublishError, Warehouse, publish_on_success
+from leads.warehouse import PublishError, Warehouse, export_leads, publish_on_success
 
 log = logging.getLogger(__name__)
 
@@ -59,7 +59,8 @@ def collect(month: Month = None) -> None:
 
 @app.command()
 def build() -> None:
-    """Rebuild every snapshot month into a new warehouse, published only if no error check fails."""
+    """Rebuild every snapshot month into a new warehouse, published only if no error check fails,
+    and write each month's lead list from it."""
     settings = Settings()
     months = settings.snapshot_months()
     if not months:
@@ -82,4 +83,13 @@ def build() -> None:
                         warehouse.run_checks(run, layer)
     except (duckdb.Error, DataQualityError, PublishError) as exc:
         log.error("%s; the published warehouse was not changed", exc)
+        raise typer.Exit(1) from exc
+    try:
+        with duckdb.connect(settings.warehouse_path, read_only=True) as con:
+            for month in months:
+                path = settings.leads_csv(month)
+                export_leads(con, month, path)
+                log.info("wrote %s", path)
+    except PublishError as exc:
+        log.error("%s; the warehouse is published, but not this lead list", exc)
         raise typer.Exit(1) from exc

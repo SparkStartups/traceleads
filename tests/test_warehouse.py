@@ -16,7 +16,13 @@ from leads.config import (
     generic_words,
 )
 from leads.tracking import Run
-from leads.warehouse import PUBLISH_ATTEMPTS, PublishError, Warehouse, publish_on_success
+from leads.warehouse import (
+    PUBLISH_ATTEMPTS,
+    PublishError,
+    Warehouse,
+    export_leads,
+    publish_on_success,
+)
 
 
 def table_names(warehouse: Warehouse) -> set[str]:
@@ -196,3 +202,20 @@ def test_open_reader_blocks_publishing_on_windows(tmp_path, sql_dir, month, no_p
     build_month(path, sql_dir, month)
     with duckdb.connect(path, read_only=True), pytest.raises(PublishError):
         build_month(path, sql_dir, month.replace(month=11))
+
+
+def test_export_writes_the_month_s_lead_list_in_rank_order(tmp_path, month):
+    path = tmp_path / "output" / "leads.csv"
+    with duckdb.connect() as con:
+        con.execute(
+            "CREATE SCHEMA mart; CREATE TABLE mart.leads_export AS FROM (VALUES "
+            "(DATE '2026-10-01', 2, 'B'), (DATE '2026-10-01', 1, 'A, \"x\"'), "
+            "(DATE '2026-09-01', 1, 'C')) AS leads (snapshot_month, rank, company)"
+        )
+        export_leads(con, month, path)
+    assert path.read_text(encoding="utf-8").splitlines() == [
+        "rank,company",
+        '1,"A, ""x"""',
+        "2,B",
+    ]
+    assert list(path.parent.iterdir()) == [path]

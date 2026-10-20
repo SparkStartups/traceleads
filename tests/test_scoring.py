@@ -575,3 +575,151 @@ def test_month_over_month_tells_what_moved_a_company(stg_run, before, now, cause
         [*([] if now is None else [fact(SUBJECT, **now)]), *PEERS],
     )
     assert changed[SUBJECT][-1] == causes
+
+
+# The lead list
+
+
+def link(place: str, tier: str = "automatic") -> str:
+    """Return SQL linking the fixture place ``place`` to the subject."""
+    return (
+        f"INSERT INTO int.links SELECT {MONTH}, cid, {SUBJECT}, '{tier}', 'brand_and_building', "
+        f"1 FROM int.places WHERE name = '{place}'"
+    )
+
+
+LEAD = {"reviews": 103, "insured": 0.96, "tax": "5000"}
+
+
+def lead_list(
+    stg_run, *changes: str, view: str = "mart.leads", subject: dict[str, object] = LEAD
+) -> list[tuple]:
+    """Score ``subject`` among five peers, register it and link it to the fixture place Cozy,
+    apply ``changes``, and return ``view``'s rows."""
+    scores(stg_run, fact(SUBJECT, **subject), *PEERS)
+    for change in (
+        "INSERT INTO int.companies (snapshot_month, ja_kodas, name, address, legal_form, reg_date) "
+        f"VALUES ({MONTH}, {SUBJECT}, 'UAB \"Cozy\"', '{COZY_BUILDING}', {UAB}, DATE '2018-01-01')",
+        link("Cozy"),
+        *changes,
+    ):
+        stg_run.warehouse.con.execute(change)
+    return stg_run.rows(f"SELECT * EXCLUDE (snapshot_month) FROM {view}")
+
+
+def test_a_flagged_company_is_listed_with_its_places_numbers_and_reason(stg_run):
+    (row,) = lead_list(stg_run, link("Užupio kavinė", "review"))  # in review: not one of its places
+    (cid, address) = stg_run.rows("SELECT cid, address FROM int.places WHERE name = 'Cozy'")[0]
+    assert row == (
+        1,
+        "lead",
+        SUBJECT,
+        'UAB "Cozy"',
+        COZY_BUILDING,
+        "cafes_bakeries",
+        103,
+        102.5,
+        f"Cozy, {address} https://www.google.com/maps?cid={cid}",
+        1.0,
+        3.0,
+        0.32,
+        2025,
+        Decimal("5000.00"),
+        30000.0,
+        0.17,
+        25000.0,
+        "category",
+        5,
+        "103 reviews, category median 102.5; staff gap: 1.0 against the peers' 3.0 (32%); "
+        "tax gap: 5000 € in 2025 against the peers' 30000 € (17%)",
+        "",
+    )
+
+
+@pytest.mark.parametrize(
+    ("subject", "reason"),
+    [
+        (
+            {"reviews": 103, "insured": 3.0, "tax": "5000"},
+            "staff 3.0 against the peers' 3.0 (100%); tax gap: 5000 €",
+        ),
+        (
+            {"reviews": 103, "insured": 1.0, "tax": "30000"},
+            "staff gap: 1.0 against the peers' 3.0 (33%); tax 30000 €",
+        ),
+    ],
+    ids=["tax-gap", "staff-gap"],
+)
+def test_a_watched_company_s_reason_names_its_one_gap(stg_run, subject, reason):
+    (row,) = lead_list(stg_run, subject=subject)
+    assert row[1] == "watch"
+    assert reason in row[19]
+
+
+def test_a_reason_leaves_out_the_share_of_a_peers_median_of_0(stg_run):
+    zero = (
+        "UPDATE mart.scores SET peer_median_staff = 0, staff_ratio = NULL, staff_gap = false, "
+        "peer_median_tax = 0, tax_ratio = NULL, tax_gap = false"
+    )
+    (row,) = lead_list(stg_run, zero)
+    assert row[19].endswith(
+        "; staff 1.0 against the peers' 0.0; tax 5000 € in 2025 against the peers' 0 €"
+    )
+
+
+def test_the_list_rounds_its_figures(stg_run):
+    rounding = (
+        "UPDATE mart.scores SET peer_median_staff = 3.04, peer_median_tax = 30000.004, "
+        "tax_gap_eur = 25000.004"
+    )
+    (row,) = lead_list(stg_run, rounding)
+    assert (row[10], row[14], row[16]) == (3.0, 30000.0, 25000.0)
+
+
+def test_a_company_s_places_come_from_its_own_month(stg_run):
+    last_month = "(snapshot_month - INTERVAL 1 MONTH)::DATE AS snapshot_month"
+    (row,) = lead_list(
+        stg_run,
+        f"INSERT INTO int.places SELECT * REPLACE ({last_month}) FROM int.places",
+        f"INSERT INTO int.links SELECT * REPLACE ({last_month}) FROM int.links",
+    )
+    assert row[8].count("https://") == 1
+
+
+def test_a_company_s_places_are_listed_busiest_first(stg_run):
+    (row,) = lead_list(
+        stg_run, link("Užupio kavinė"), "UPDATE int.places SET review_count = 1 WHERE name = 'Cozy'"
+    )
+    assert [place.split(",")[0] for place in row[8].split("; ")] == ["Užupio kavinė", "Cozy"]
+
+
+@pytest.mark.parametrize(
+    ("tier", "listed"), [("lead", 1), ("watch", 1), ("not_flagged", 0), ("held", 0)]
+)
+def test_only_leads_and_watch_are_listed(stg_run, tier, listed):
+    rows = lead_list(stg_run, f"UPDATE mart.scores SET tier = '{tier}'")
+    assert len(rows) == listed
+
+
+def test_an_ii_s_registered_address_is_withheld(stg_run):
+    (row,) = lead_list(
+        stg_run, f"UPDATE int.companies SET legal_form = 810 WHERE ja_kodas = {SUBJECT}"
+    )
+    assert row[3:5] == ('UAB "Cozy"', None)
+
+
+@pytest.mark.parametrize(
+    ("text", "quote"),
+    [("=1+1", "'"), ("+1", "'"), ("-1", "'"), ("@SUM(1)", "'"), ("\t=1", "'"), ("\r=1", "'")]
+    + [("Cozy - 1", "")],  # not at the start
+)
+def test_the_export_quotes_register_and_google_text_a_spreadsheet_would_run(stg_run, text, quote):
+    changes = (
+        f"UPDATE int.companies SET name = '{text}', address = '{text}' WHERE ja_kodas = {SUBJECT}",
+        f"UPDATE int.places SET name = '{text}', address = NULL WHERE name = 'Cozy'",
+    )
+    (exported,) = lead_list(stg_run, *changes, view="mart.leads_export")
+    (listed,) = stg_run.rows("SELECT * EXCLUDE (snapshot_month) FROM mart.leads")
+    assert exported[3:5] == (f"{quote}{text}", f"{quote}{text}")
+    assert exported[8].startswith(f"{quote}{text} https://")
+    assert listed[3] == text  # the app shows the text as it is

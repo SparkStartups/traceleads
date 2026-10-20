@@ -113,7 +113,7 @@ def test_layers_run_in_order_stg_int_mart(bare_project_root, snapshot):
         "mart": "CREATE TABLE mart.c AS SELECT x + 1 AS x FROM int.b;",
     }
     for layer, sql in models.items():
-        (bare_project_root / "sql" / layer).mkdir()
+        (bare_project_root / "sql" / layer).mkdir(exist_ok=True)
         (bare_project_root / "sql" / layer / "10_model.sql").write_text(sql, encoding="utf-8")
     result = runner.invoke(app, ["build"])
     assert result.exit_code == 0, result.output
@@ -141,7 +141,6 @@ def test_a_failed_model_stops_the_build_without_publishing(bare_project_root, sn
     snapshot(SEPTEMBER)
     assert runner.invoke(app, ["build"]).exit_code == 0
     snapshot(OCTOBER)
-    (bare_project_root / "sql" / "mart").mkdir()
     (bare_project_root / "sql" / "mart" / "10_broken.sql").write_text(
         "SELECT * FROM nope;", encoding="utf-8"
     )
@@ -197,6 +196,21 @@ def test_build_loads_each_collected_month_into_staging(project_root, collected):
         listings = con.execute(per_month.format("google_listings")).fetchall()
     assert entities == [(SEPTEMBER, 3), (OCTOBER, 3)]
     assert listings == [(SEPTEMBER, 20), (OCTOBER, 20)]
+    for month in (SEPTEMBER, OCTOBER):  # no company is flagged in the fixture months
+        path = project_root / "output" / f"{month:%Y-%m}" / "leads.csv"
+        header = path.read_text(encoding="utf-8")
+        assert header.startswith("rank,status,ja_kodas,company,company_address,category,")
+
+
+def test_build_reports_a_lead_list_left_open(bare_project_root, snapshot, lock_file, caplog):
+    snapshot(OCTOBER)
+    path = Settings(bare_project_root).leads_csv(OCTOBER)
+    lock_file(path, times=PUBLISH_ATTEMPTS)
+    result = runner.invoke(app, ["build"])
+    assert result.exit_code == 1
+    assert "close it and rerun; the warehouse is published, but not this lead list" in caplog.text
+    assert Settings(bare_project_root).warehouse_path.exists()
+    assert list(path.parent.iterdir()) == [path.with_name("leads.csv.partial")]
 
 
 def test_build_reports_a_warehouse_left_open(bare_project_root, snapshot, lock_file, caplog):

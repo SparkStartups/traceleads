@@ -8,9 +8,10 @@ similar businesses. Every lead carries the listing and the official records it r
 numbers behind its score, and the innocent explanations to rule out first. These are leads for a
 closer look, not accusations.
 
-**Status: transform.** The system is built in stages: infrastructure, collect, load, transform,
+**Status: publish.** The system is built in stages: infrastructure, collect, load, transform,
 publish, the app. The infrastructure, collection, staging tables, the links from Google places
-to companies, and the linked companies' facts and scores are built, and October 2026 is collected.
+to companies, the linked companies' facts and scores, and the lead list are built, and October
+2026 is collected.
 Each section below is updated when its part is built; the results of a real run are added at the
 end.
 
@@ -172,9 +173,9 @@ activity fits when its latest activity class in Sodra is one of the category's: 
 Each candidate carries the first rule it meets, if any, and `int.links` holds one row per place in
 scope: its company, tier and deciding rule, or `unmatched` when no candidate meets a rule.
 `mart.review_queue` lists the deciding rule's candidates of every place in review, with both
-addresses; an IĮ without a trade name shows only its code and address. A link by brand and activity
-whose brand another company also uses is reported, since the brand alone may not tell which of them
-runs the place.
+addresses, except an IĮ's registered address; an IĮ without a trade name shows only its code. A
+link by brand and activity whose brand another company also uses is reported, since the brand
+alone may not tell which of them runs the place.
 
 | October, places in scope | Automatic | Review | Unmatched |
 |---|---|---|---|
@@ -262,6 +263,27 @@ category's median), and on a new tier the staff and tax that changed, with the p
 both months. Every build scores all months with the same code, so a change comes from the data.
 October is the first month, so it has nothing to compare with.
 
+## Reading a lead
+
+`leads build` writes each month's list to `output/<month>/leads.csv` from the published
+warehouse's `mart.leads`: leads, then watch, in rank order, one row per company.
+
+| Columns | What they say |
+|---|---|
+| `rank`, `status`, `ja_kodas`, `company`, `company_address`, `category` | which company, and how flagged |
+| `reviews`, `category_median_reviews`, `places` | how busy, and on which Google places, each with its Maps link |
+| `staff`, `peer_median_staff`, `staff_ratio` | declared staff against the peers' median |
+| `tax_year`, `tax`, `peer_median_tax`, `tax_ratio`, `tax_gap_eur` | the last full year's tax against the peers' median, and the euro gap |
+| `peer_group`, `peers` | whom it was compared with |
+| `reason` | the numbers above in one line, each gap named |
+| `explanations` | the innocent explanations to rule out first |
+
+A reason reads: "176 reviews, category median 91.0; staff gap: 3.3 against the peers' 11.7
+(29%); tax gap: 7565 € in 2025 against the peers' 118049 € (6%)". An IĮ's registered address is
+left out of the list and the review queue, since it is often its owner's home. Text from the
+register or Google that a spreadsheet would run as a formula (starting with `=`, `+`, `-`, `@`, a
+tab or a carriage return) is quoted in the file, since anyone can name a place on Google.
+
 ## Trusting the list
 
 - **Data-quality checks** after every layer; a failing blocking check stops the build and
@@ -290,7 +312,8 @@ docker compose up
 ```
 
 This builds the image and runs `leads build`, which rebuilds the warehouse from
-`data/snapshots/` into `warehouse/leads.duckdb`. With no month in `data/snapshots/` it stops,
+`data/snapshots/` into `warehouse/leads.duckdb` and writes each month's lead list to
+`output/<month>/leads.csv`. With no month in `data/snapshots/` it stops,
 reports that there is no snapshot and exits with code 1. Runs in Docker record their commit as
 `unknown`: the image holds no git history.
 

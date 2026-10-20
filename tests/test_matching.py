@@ -284,6 +284,18 @@ def test_the_review_queue_lists_the_deciding_rule_s_candidates(stg_run):
     ]
 
 
+@pytest.mark.parametrize(
+    ("legal_form", "shown"), [(310, ('MB "Rytas"', COZY_BUILDING)), (810, (None, None))]
+)
+def test_the_review_queue_withholds_an_ii_s_registered_address(stg_run, legal_form, shown):
+    stg_run.build_int(
+        company(304100001, 'MB "Rytas"', COZY_BUILDING, "561100"),  # the only fitting company
+        f"UPDATE stg.jar_entities SET legal_form = {legal_form} WHERE ja_kodas = 304100001",
+    )  # an IĮ goes by its VMI trade name, here none
+    stg_run.warehouse.run_layer(stg_run.run, "mart")
+    assert stg_run.rows("SELECT company, company_address FROM mart.review_queue") == [shown]
+
+
 KLAIPEDA = "Klaipėda, Tiltų g. 1, LT-91246"
 
 

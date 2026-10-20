@@ -4,6 +4,7 @@ import time
 from collections.abc import Generator
 from contextlib import contextmanager
 from dataclasses import asdict, dataclass
+from datetime import date
 from itertools import product
 from pathlib import Path
 from typing import Self
@@ -155,6 +156,19 @@ def _replace(source: Path, target: Path) -> None:
         except PermissionError as exc:
             if attempt == PUBLISH_ATTEMPTS:
                 raise PublishError(
-                    f"{target} stayed open in another program (a SQL client); close it and rerun"
+                    f"{target} stayed open in another program (a SQL client or a spreadsheet); "
+                    "close it and rerun"
                 ) from exc
             time.sleep(PUBLISH_RETRY_SECONDS)
+
+
+def export_leads(con: duckdb.DuckDBPyConnection, month: date, path: Path) -> None:
+    """Write ``month``'s lead list to ``path`` as CSV, in rank order, replacing it whole."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    partial = path.with_name(f"{path.name}.partial")
+    con.sql(
+        "SELECT * EXCLUDE (snapshot_month) FROM mart.leads_export WHERE snapshot_month = ? "
+        "ORDER BY rank",
+        params=[month],
+    ).write_csv(str(partial))
+    _replace(partial, path)
