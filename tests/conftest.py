@@ -357,8 +357,28 @@ def collected(project_root: Path, snapshots: Callable[[date], Path]) -> Callable
 
 
 class StgRun(NamedTuple):
+    """The fixture month's warehouse with its stg tables built, and the run building it."""
+
     warehouse: Warehouse
     run: Run
+
+    def rows(self, sql: str) -> list[tuple]:
+        return self.warehouse.con.execute(sql).fetchall()
+
+    def build_int(self, *changes: str) -> None:
+        """Apply ``changes`` to the stg tables, then build the int layer."""
+        for change in changes:
+            self.warehouse.con.execute(change)
+        self.warehouse.run_layer(self.run, "int")
+
+    def run_checks(self, layer: str) -> dict[str, tuple[str, int]]:
+        """Run the checks of ``layer`` and return each one's severity and failing rows."""
+        self.warehouse.run_checks(self.run, layer)
+        results = self.rows(
+            "SELECT check_name, severity, failing_rows FROM meta.dq_results "
+            f"WHERE layer = '{layer}'"
+        )
+        return {name: (severity, failing) for name, severity, failing in results}
 
 
 @pytest.fixture

@@ -10,13 +10,8 @@ from leads.tracking import Run
 from leads.warehouse import Warehouse
 
 
-def rows(warehouse: Warehouse, sql: str) -> list[tuple]:
-    return warehouse.con.execute(sql).fetchall()
-
-
 def test_jar_entities_are_typed(stg_run):
-    warehouse, _ = stg_run
-    entities = rows(warehouse, "SELECT * EXCLUDE (snapshot_month) FROM stg.jar_entities ORDER BY 1")
+    entities = stg_run.rows("SELECT * EXCLUDE (snapshot_month) FROM stg.jar_entities ORDER BY 1")
     kavos_namai = (304000001, 'UAB "Kavos namai"', "Vilnius, Trakų g. 8-5, LT-01132")
     leges_name = 'Advokatų profesinė bendrija "LEGES | LB"'  # a pipe inside quotes
     leges = (304000002, leges_name, "Vilnius, Gedimino pr. 1, LT-01103")
@@ -29,21 +24,17 @@ def test_jar_entities_are_typed(stg_run):
 
 
 def test_sodra_drops_foreign_insurers_and_pads_activity_codes(stg_run):
-    warehouse, _ = stg_run
-    assert rows(warehouse, "SELECT count(*), count(DISTINCT ja_kodas) FROM stg.sodra_monthly") == [
+    assert stg_run.rows("SELECT count(*), count(DISTINCT ja_kodas) FROM stg.sodra_monthly") == [
         (2 * 8, 2)  # two employers with a company code, January to August
     ]
-    assert rows(
-        warehouse,
+    assert stg_run.rows(
         "SELECT ja_kodas, insured, evrk FROM stg.sodra_monthly "
         "WHERE data_month = DATE '2026-08-01' ORDER BY 1",
     ) == [(304000001, 5, "561100"), (304000002, 1, "015000")]
 
 
 def test_vmi_taxes_keep_the_latest_month_of_each_year(stg_run):
-    warehouse, _ = stg_run
-    assert rows(
-        warehouse,
+    assert stg_run.rows(
         "SELECT ja_kodas, trade_name, tax_year, months, amount FROM stg.vmi_taxes ORDER BY 1, 3",
     ) == [
         (304000001, "Kavos namai", 2025, 12, Decimal("15000.50")),
@@ -56,9 +47,7 @@ def test_vmi_taxes_keep_the_latest_month_of_each_year(stg_run):
 
 
 def test_source_files_list_every_raw_file(stg_run):
-    warehouse, _ = stg_run
-    assert rows(
-        warehouse,
+    assert stg_run.rows(
         "SELECT source, file, snapshot_rows, period FROM stg.source_files "
         "WHERE source <> 'google_maps' ORDER BY 1, 2",
     ) == [
@@ -66,20 +55,17 @@ def test_source_files_list_every_raw_file(stg_run):
         ("sodra", "monthly-2026.csv.zip", 3 * 8, "202608"),
         ("vmi_taxes", "vmi_taxes.jsonl", 8, "2026-10-08"),
     ]
-    assert rows(
-        warehouse,
+    assert stg_run.rows(
         "SELECT count(*), any_value(snapshot_rows) FROM stg.source_files "
         "WHERE source = 'google_maps'",
     ) == [(84, 20)]
 
 
 def test_google_listings_keep_every_place_of_every_query(stg_run):
-    warehouse, _ = stg_run
-    assert rows(
-        warehouse, "SELECT count(*), count(DISTINCT cid), any_value(query) FROM stg.google_listings"
+    assert stg_run.rows(
+        "SELECT count(*), count(DISTINCT cid), any_value(query) FROM stg.google_listings"
     ) == [(20, 20, "kavinė Antakalnis Vilnius")]
-    assert rows(
-        warehouse,
+    assert stg_run.rows(
         "SELECT name, category, google_category, address, review_count, closed, file "
         "FROM stg.google_listings WHERE cid = 5596741140976187341",
     ) == [
@@ -95,19 +81,8 @@ def test_google_listings_keep_every_place_of_every_query(stg_run):
     ]
 
 
-def dq_results(warehouse: Warehouse) -> dict[str, tuple[str, int]]:
-    return {
-        name: (severity, failing)
-        for name, severity, failing in rows(
-            warehouse, "SELECT check_name, severity, failing_rows FROM meta.dq_results"
-        )
-    }
-
-
 def test_checks_pass_and_full_or_empty_lists_are_only_reported(stg_run):
-    warehouse, run = stg_run
-    warehouse.run_checks(run, "stg")
-    assert dq_results(warehouse) == {
+    assert stg_run.run_checks("stg") == {
         "stg_company_codes": ("error", 0),
         "stg_google_queries": ("warn", 84),  # one full list, 83 pages without one
         "stg_owner_names_hidden": ("error", 0),
@@ -161,17 +136,16 @@ def test_checks_pass_and_full_or_empty_lists_are_only_reported(stg_run):
     ],
 )
 def test_checks_catch_broken_sources(stg_run, breakage, check):
-    warehouse, run = stg_run
-    warehouse.con.execute(breakage)
+    stg_run.warehouse.con.execute(breakage)
     with pytest.raises(DataQualityError, match=check):
-        warehouse.run_checks(run, "stg")
+        stg_run.warehouse.run_checks(stg_run.run, "stg")
 
 
 def test_sodra_three_months_old_is_still_fresh(stg_run):
-    warehouse, run = stg_run
-    warehouse.con.execute("UPDATE stg.sodra_monthly SET data_month = data_month - INTERVAL 1 MONTH")
-    warehouse.run_checks(run, "stg")  # July, three months before October
-    assert dq_results(warehouse)["stg_sodra_fresh"] == ("error", 0)
+    stg_run.warehouse.con.execute(
+        "UPDATE stg.sodra_monthly SET data_month = data_month - INTERVAL 1 MONTH"
+    )  # July, three months before October
+    assert stg_run.run_checks("stg")["stg_sodra_fresh"] == ("error", 0)
 
 
 def test_a_month_without_places_is_stopped_by_its_check(
