@@ -255,6 +255,13 @@ of the month's leads stay leads.
 Both October leads stay leads at a gap of a half or a third with any minimum of reviews; at a half
 there are 5 to 8 leads, and at a quarter none of them is one.
 
+`mart.month_over_month` sets each month's scored companies against the month built before it:
+`new`, `gone`, `tier changed` or `unchanged`, with what moved each one: linked or no longer linked
+to a place, held or judged again, a new category, busy or no longer (with the reviews and the
+category's median), and on a new tier the staff and tax that changed, with the peers' medians of
+both months. Every build scores all months with the same code, so a change comes from the data.
+October is the first month, so it has nothing to compare with.
+
 ## Trusting the list
 
 - **Data-quality checks** after every layer; a failing blocking check stops the build and

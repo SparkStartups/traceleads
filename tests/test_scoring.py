@@ -470,3 +470,108 @@ def test_the_sensitivity_grid_tiers_the_judged_companies_again_at_each_setting(
     assert {(gap, minimum): tuple(found) for gap, minimum, *found in grid if any(found)} == {
         cell: counts for cell in cells
     }
+
+
+# Month over month
+
+
+def month_over_month(stg_run, previous: list[str], current: list[str]) -> dict[int, tuple]:
+    """Score ``current`` in the fixture month and ``previous`` in the month before it; return each
+    company's change, tiers, category and causes."""
+    scores(stg_run, *current)
+    con = stg_run.warehouse.con
+    con.execute(
+        "SET VARIABLE snapshot_month = (getvariable('snapshot_month') - INTERVAL 1 MONTH)::DATE"
+    )
+    con.execute(f"INSERT INTO mart.company_facts VALUES {', '.join(previous)}")
+    stg_run.warehouse.execute_file(stg_run.warehouse.sql_dir / "mart" / "40_scores.sql")
+    rows = stg_run.rows(
+        "SELECT ja_kodas, change, previous_tier, tier, category, causes FROM mart.month_over_month"
+    )
+    return {code: tuple(row) for code, *row in rows}
+
+
+def test_the_first_month_has_nothing_to_compare_with(stg_run):
+    scores(stg_run, fact(SUBJECT), *PEERS)
+    assert stg_run.rows("SELECT * FROM mart.month_over_month") == []
+
+
+def test_month_over_month_tells_new_gone_re_tiered_and_unchanged_companies(stg_run):
+    lead = {"reviews": 103, "insured": 0.0, "tax": "5000"}
+    changed = month_over_month(
+        stg_run,
+        [fact(304100001, **lead), fact(304100002), fact(304100003), *PEERS],
+        [fact(304100001), fact(304100002), fact(304100004, category="car_repair"), *PEERS],
+    )
+    assert {code: row[:4] for code, row in changed.items() if code < 304200000} == {
+        304100001: ("tier changed", "lead", "not_flagged", "cafes_bakeries"),
+        304100002: ("unchanged", "not_flagged", "not_flagged", "cafes_bakeries"),
+        304100003: ("gone", "not_flagged", None, "cafes_bakeries"),
+        304100004: ("new", None, "held", "car_repair"),
+    }
+
+
+@pytest.mark.parametrize(
+    ("before", "now", "causes"),
+    [
+        (
+            {"reviews": 40, "insured": 0.0, "tax": "5000"},
+            {"reviews": 103, "insured": 0.0, "tax": "5000"},
+            ["busy: 40 → 103 reviews, category median 101.5 → 102.5"],
+        ),
+        (
+            {"reviews": 103, "insured": 0.0, "tax": "5000"},
+            {"reviews": 40, "insured": 0.0, "tax": "5000"},
+            ["no longer busy: 103 → 40 reviews, category median 102.5 → 101.5"],
+        ),
+        (
+            {"reviews": 103, "insured": 0.04, "tax": "5000"},
+            {"reviews": 103, "insured": 2.55, "tax": "30000"},
+            ["staff 0.0 → 2.6, peers 3.0 → 3.0", "tax 5000 → 30000, peers 30000 → 30000"],
+        ),
+        (  # still a lead: figures that moved on the same tier are no cause
+            {"reviews": 103, "insured": 0.0, "tax": "5000"},
+            {"reviews": 103, "insured": 0.5, "tax": "6000"},
+            [],
+        ),
+        (  # from watch: the staff crossed the peers' median, not the gap
+            {"reviews": 103, "insured": 3.0, "tax": "5000"},
+            {"reviews": 103, "insured": 3.1, "tax": "5000"},
+            ["staff 3.0 → 3.1, peers 3.0 → 3.0"],
+        ),
+        (  # from watch: the tax crossed the peers' median, not the gap
+            {"reviews": 103, "insured": 0.0, "tax": "30000"},
+            {"reviews": 103, "insured": 0.0, "tax": "30001"},
+            ["tax 30000 → 30001, peers 30000 → 30000"],
+        ),
+        (
+            {"reviews": 103},
+            {"reviews": 103, "category": "car_repair"},
+            ["held: few_peers", "category cafes_bakeries → car_repair"],
+        ),
+        ({"closed": True}, {}, ["judged again"]),
+        ({}, {"tax": None}, ["held: no_tax_record"]),
+        (None, {"closed": True}, ["linked to a place this month"]),
+        ({"closed": True}, None, ["no longer linked to a place"]),
+    ],
+    ids=[
+        "busy",
+        "no-longer-busy",
+        "staff-and-tax",
+        "same-tier",
+        "staff-past-the-median",
+        "tax-past-the-median",
+        "category",
+        "judged-again",
+        "held",
+        "new",
+        "gone",
+    ],
+)
+def test_month_over_month_tells_what_moved_a_company(stg_run, before, now, causes):
+    changed = month_over_month(
+        stg_run,
+        [*([] if before is None else [fact(SUBJECT, **before)]), *PEERS],
+        [*([] if now is None else [fact(SUBJECT, **now)]), *PEERS],
+    )
+    assert changed[SUBJECT][-1] == causes
