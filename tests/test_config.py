@@ -1,6 +1,6 @@
 from datetime import date
 
-from leads.config import Settings, current_month, generic_words
+from leads.config import LEGAL_FORMS, Settings, current_month, generic_words
 
 
 def test_snapshot_months_are_the_month_directories_oldest_first(tmp_path):
@@ -25,3 +25,7 @@ def test_generic_words_are_those_of_the_city_and_of_the_categories():
     assert {"Vilnius", "Vilniaus", "Vilniuje"} <= set(words)  # the city
     assert {"odontologijos", "klinika"} <= set(words)  # a keyword
     assert {"Kavos", "parduotuvė", "Stomatologas"} <= set(words)  # Google categories
+
+
+def test_the_owner_operated_forms_are_mb_and_ii():
+    assert [form.abbreviation for form in LEGAL_FORMS if form.owner_operated] == ["MB", "IĮ"]

@@ -154,19 +154,20 @@ CITY_BOUNDS = Bounds(lat_min=54.567, lat_max=54.832, lng_min=25.024, lng_max=25.
 
 @dataclass(frozen=True)
 class LegalForm:
-    """A legal form of the register that runs businesses. The register hides the name of a
-    company named after its owner."""
+    """A legal form of the register that runs businesses. The owners of an owner-operated one
+    need not be on its payroll; the register hides the name of a company named after its owner."""
 
     code: int
     abbreviation: str
     name: str  # as the register spells it
+    owner_operated: bool = False
     named_after_owner: bool = False
 
 
 LEGAL_FORMS = (
     LegalForm(310, "UAB", "Uždaroji akcinė bendrovė"),
-    LegalForm(960, "MB", "Mažoji bendrija"),
-    LegalForm(810, "IĮ", "Individuali įmonė", named_after_owner=True),
+    LegalForm(960, "MB", "Mažoji bendrija", owner_operated=True),
+    LegalForm(810, "IĮ", "Individuali įmonė", owner_operated=True, named_after_owner=True),
     LegalForm(570, "VšĮ", "Viešoji įstaiga"),
     LegalForm(320, "AB", "Akcinė bendrovė"),
 )

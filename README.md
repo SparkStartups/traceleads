@@ -9,8 +9,8 @@ numbers behind its score, and the innocent explanations to rule out first. These
 closer look, not accusations.
 
 **Status: transform.** The system is built in stages: infrastructure, collect, load, transform,
-publish, the app. The infrastructure, collection, staging tables, and the links from Google
-places to companies are built, and October 2026 is collected.
+publish, the app. The infrastructure, collection, staging tables, the links from Google places
+to companies and the facts of the linked companies are built, and October 2026 is collected.
 Each section below is updated when its part is built; the results of a real run are added at the
 end.
 
@@ -196,6 +196,12 @@ verdict cannot be read stops the build, and a label whose link the rules no long
 The file has only its header until the October sample is labelled.
 
 ## Busy, and quiet on paper
+
+`mart.company_facts` holds, for every company with an automatic link, what the score compares:
+its category (that of its busiest place), places, reviews, whether every place is closed, whether
+it is an MB or IĮ, its registration date, and its insured staff and tax as defined below. A month
+without a Sodra row had nobody insured; a company without a VMI row covering the whole tax year
+has no known tax. In October that is 157 companies, 153 of them with a tax row.
 
 - **Unit:** the company, with the reviews of all its automatically linked places summed.
 - **Busy:** at least the category's median reviews, and at least 50.

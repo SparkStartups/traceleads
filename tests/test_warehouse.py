@@ -33,7 +33,7 @@ def test_the_ref_tables_hold_the_configuration_once(tmp_path, sql_dir):
     for _ in range(2):  # reopening writes them again
         with Warehouse.open(path, sql_dir, tmp_path):
             pass
-    forms = "SELECT code, abbreviation, name, named_after_owner FROM ref.legal_forms"
+    forms = "SELECT * FROM ref.legal_forms"
     assert file_rows(path, forms) == [astuple(form) for form in LEGAL_FORMS]
     pairs = "SELECT category, google_category FROM ref.google_categories"
     assert file_rows(path, pairs) == [
