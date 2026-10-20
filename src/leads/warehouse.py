@@ -1,15 +1,16 @@
-"""DuckDB warehouse: run-metadata schema, layered SQL models, their checks and publishing."""
+"""DuckDB warehouse: run metadata, configuration tables, layered SQL models, checks, publishing."""
 
 import time
 from collections.abc import Generator
 from contextlib import contextmanager
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Self
 
 import duckdb
 
 from leads.checks import Check, DataQualityError, Severity
+from leads.config import CATEGORIES, CITY, CITY_BOUNDS, LEGAL_FORMS, generic_words
 from leads.tracking import Run
 
 META_SQL = "meta.sql"
@@ -23,6 +24,20 @@ class PublishError(Exception):
     """Raised when a finished build cannot replace a published file."""
 
 
+def ref_tables() -> dict[str, list[dict[str, object]]]:
+    """Return the configuration the models read, as the rows of each ``ref`` table."""
+    return {
+        "google_categories": [
+            {"category": category.key, "google_category": google_category}
+            for category in CATEGORIES
+            for google_category in category.google_categories
+        ],
+        "generic_words": [{"word": word} for word in generic_words()],
+        "legal_forms": [asdict(form) for form in LEGAL_FORMS],
+        "city": [{"name": CITY} | asdict(CITY_BOUNDS)],
+    }
+
+
 @dataclass(frozen=True)
 class Warehouse:
     """A DuckDB connection paired with the directory of SQL models it runs."""
@@ -33,7 +48,7 @@ class Warehouse:
     @classmethod
     @contextmanager
     def open(cls, path: Path, sql_dir: Path, *input_dirs: Path) -> Generator[Self]:
-        """Open or create the warehouse file and ensure the meta schema exists.
+        """Open or create the warehouse file, ensure the meta schema and write the ref tables.
 
         Models read their input files by name from ``input_dirs`` (``FROM 'jar.parquet'``).
         """
@@ -42,7 +57,16 @@ class Warehouse:
         with duckdb.connect(path, config={"file_search_path": search_path}) as con:
             warehouse = cls(con, sql_dir)
             warehouse.execute_file(sql_dir / META_SQL)
+            warehouse.write_ref()
             yield warehouse
+
+    def write_ref(self) -> None:
+        """Write the configuration into the ``ref`` schema, replacing what an earlier run wrote."""
+        self.con.execute("CREATE SCHEMA IF NOT EXISTS ref")
+        for name, rows in ref_tables().items():
+            self.con.execute(
+                f"CREATE OR REPLACE TABLE ref.{name} AS SELECT unnest(?, recursive := true)", [rows]
+            )
 
     def execute_file(self, path: Path) -> None:
         self.con.execute(path.read_text(encoding="utf-8"))

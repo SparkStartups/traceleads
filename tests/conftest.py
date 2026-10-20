@@ -356,10 +356,15 @@ def collected(project_root: Path, snapshots: Callable[[date], Path]) -> Callable
     return collect
 
 
+class StgRun(NamedTuple):
+    warehouse: Warehouse
+    run: Run
+
+
 @pytest.fixture
 def stg_run(
     project_root: Path, collected: Callable[[date], Path], month: date
-) -> Generator[tuple[Warehouse, Run]]:
+) -> Generator[StgRun]:
     """Yield a warehouse and run, with the repository's ``stg`` built from the fixture snapshot."""
     settings = Settings(project_root)
     with (
@@ -367,4 +372,4 @@ def stg_run(
         Run.start(opened.con, month) as active,
     ):
         opened.run_layer(active, "stg")
-        yield opened, active
+        yield StgRun(opened, active)

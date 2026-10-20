@@ -1,6 +1,6 @@
 from datetime import date
 
-from leads.config import Settings, current_month
+from leads.config import Settings, current_month, generic_words
 
 
 def test_snapshot_months_are_the_month_directories_oldest_first(tmp_path):
@@ -18,3 +18,10 @@ def test_current_month_is_the_first_day_of_today_s_month():
 
 def test_no_snapshots_give_no_months(tmp_path):
     assert Settings(tmp_path).snapshot_months() == []
+
+
+def test_generic_words_are_those_of_the_city_and_of_the_categories():
+    words = generic_words()
+    assert {"Vilnius", "Vilniaus", "Vilniuje"} <= set(words)  # the city
+    assert {"odontologijos", "klinika"} <= set(words)  # a keyword
+    assert {"Kavos", "parduotuvė", "Stomatologas"} <= set(words)  # Google categories

@@ -1,9 +1,11 @@
 import subprocess
 import sys
+from dataclasses import astuple
 
 import duckdb
 import pytest
 
+from leads.config import CATEGORIES, CITY, CITY_BOUNDS, LEGAL_FORMS, generic_words
 from leads.tracking import Run
 from leads.warehouse import PUBLISH_ATTEMPTS, PublishError, Warehouse, publish_on_success
 
@@ -24,6 +26,23 @@ def test_reopening_keeps_the_runs_recorded(tmp_path, sql_dir, month):
         with Warehouse.open(path, sql_dir, tmp_path) as warehouse, Run.start(warehouse.con, month):
             pass
     assert file_rows(path, "SELECT count(*) FROM meta.pipeline_runs") == [(2,)]
+
+
+def test_the_ref_tables_hold_the_configuration_once(tmp_path, sql_dir):
+    path = tmp_path / "configured.duckdb"
+    for _ in range(2):  # reopening writes them again
+        with Warehouse.open(path, sql_dir, tmp_path):
+            pass
+    forms = "SELECT code, abbreviation, name, named_after_owner FROM ref.legal_forms"
+    assert file_rows(path, forms) == [astuple(form) for form in LEGAL_FORMS]
+    pairs = "SELECT category, google_category FROM ref.google_categories"
+    assert file_rows(path, pairs) == [
+        (category.key, name) for category in CATEGORIES for name in category.google_categories
+    ]
+    assert file_rows(path, "SELECT word FROM ref.generic_words") == [
+        (word,) for word in generic_words()
+    ]
+    assert file_rows(path, "SELECT * FROM ref.city") == [(CITY, *astuple(CITY_BOUNDS))]
 
 
 def test_model_files_are_numbered_and_ordered_per_layer(warehouse, write_model):

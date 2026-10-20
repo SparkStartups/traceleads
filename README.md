@@ -8,9 +8,9 @@ similar businesses. Every lead carries the listing and the official records it r
 numbers behind its score, and the innocent explanations to rule out first. These are leads for a
 closer look, not accusations.
 
-**Status: load.** The system is built in stages: infrastructure, collect, load, transform,
-publish, the app. The infrastructure, collection and staging tables are built, and October 2026
-is collected.
+**Status: transform.** The system is built in stages: infrastructure, collect, load, transform,
+publish, the app. The infrastructure, collection, staging tables, and the companies and places
+that linking compares are built, and October 2026 is collected.
 Each section below is updated when its part is built; the results of a real run are added at the
 end.
 
@@ -120,8 +120,27 @@ name, so a renamed source column fails the build.
 | `stg.google_listings` | place and query: name, Google category, address, coordinates, review count, closed flag |
 
 Their checks stop the build when a source has no rows, a key repeats, a company code does not have
-nine digits, or Sodra's latest month is more than three months old. A results list that is empty
-or full (20 places, so more may have been left out) is reported as a warning.
+nine digits, Sodra's latest month is more than three months old, or the register shows a name for
+an IĮ, which it hides because the name may be the owner's. A results list that is empty or full
+(20 places, so more may have been left out) is reported as a warning.
+
+### Transforming: companies and places
+
+The configuration in `config.py` is written into `ref` tables each time the warehouse opens: the
+Google categories of each category, the legal forms that run businesses, the city's name and
+bounds, and the generic words, those of the city's name and of the categories' keywords and
+Google categories.
+
+| Table | One row per |
+|---|---|
+| `int.companies` | active company of a business form (UAB, MB, IĮ, VšĮ, AB): name, legal form, registration date, brand and core, and street and house number for an address in Vilnius; an IĮ goes by its VMI trade name, or by none |
+| `int.places` | Google place, merged across the queries that found it: the most reviews any query saw, closed if any saw it closed, brand, core, street and house number, and scope |
+
+A place is `in_scope` inside the city's bounds with a Google category of the category that found
+it, else `outside_city` (a search by eldership also finds Kaunas' Verkiai) or `other_activity` (a
+café search also finds restaurants, and places that show no Google category). In October, 516 of 745 places are in scope: 162 cafés and
+bakeries, 191 car repair shops and 163 dental clinics. The checks stop the build when a key
+repeats or no place is in scope, and report places in scope without a street or house number.
 
 ## Linking a place to a company
 

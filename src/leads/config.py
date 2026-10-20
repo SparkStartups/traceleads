@@ -1,4 +1,5 @@
-"""Project paths, the snapshot month and the categories searched for."""
+"""Project paths, the snapshot month, and the configuration the collectors and models read:
+the categories, the city and the legal forms."""
 
 from dataclasses import dataclass, field
 from datetime import date, datetime
@@ -50,18 +51,55 @@ class Settings:
 
 @dataclass(frozen=True)
 class Category:
-    """A business category and the Lithuanian words Google Maps is searched for it with."""
+    """A business category: the Lithuanian words Google Maps is searched for it with, and the
+    Google categories of the places that belong to it."""
 
     key: str
     keywords: tuple[str, ...]
+    google_categories: tuple[str, ...]
 
 
 CATEGORIES = (
-    Category("cafes_bakeries", ("kavinė", "kepykla")),
-    Category("car_repair", ("autoservisas",)),
-    Category("dental_clinics", ("odontologijos klinika",)),
+    Category(
+        key="cafes_bakeries",
+        keywords=("kavinė", "kepykla"),
+        google_categories=(
+            "Kavinė",
+            "Kavos parduotuvė",
+            "Kepykla",
+            "Konditerijos kepyklėlė",
+            "Konditerijos gaminiai",
+            "Konditerijos parduotuvė",
+            "Tortų parduotuvė",
+            "Desertų parduotuvė",
+            "Desertų restoranas",
+            "Kepyklos gaminių didmenininkas",
+        ),
+    ),
+    Category(
+        key="car_repair",
+        keywords=("autoservisas",),
+        google_categories=(
+            "Automobilių servisas",
+            "Automobilių remontas ir priežiūra",
+            "Automobilių dirbtuvės",
+            "Automobilių paslauga",
+            "Automobilių dažymo paslaugos",
+            "Autoelektrikų paslaugos",
+            "Mechanikas",
+            "Padangų remonto servisas",
+            "Padangų servisas",
+            "Ratų suvedimo paslaugų teikėjas",
+        ),
+    ),
+    Category(
+        key="dental_clinics",
+        keywords=("odontologijos klinika",),
+        google_categories=("Odontologijos klinika", "Stomatologas", "Gydytojas odontologas"),
+    ),
 )
 CITY = "Vilnius"
+CITY_IN_NAMES = ("Vilniaus", "Vilniuje")  # "Vilniaus odontologijos klinika", "... Vilniuje"
 # A results list shows about 20 places, so the city is searched eldership by eldership.
 ELDERSHIPS = (
     "Antakalnis",
@@ -87,3 +125,46 @@ ELDERSHIPS = (
     "Žvėrynas",
 )
 RENDER_CAP = 200  # Oxylabs renders per collect run: 84 searches and their retries
+
+
+@dataclass(frozen=True)
+class Bounds:
+    """A box of latitudes and longitudes."""
+
+    lat_min: float
+    lat_max: float
+    lng_min: float
+    lng_max: float
+
+
+# Vilnius city municipality; a search by eldership name also finds places in other cities.
+CITY_BOUNDS = Bounds(lat_min=54.567, lat_max=54.832, lng_min=25.024, lng_max=25.481)
+
+
+@dataclass(frozen=True)
+class LegalForm:
+    """A legal form of the register that runs businesses. The register hides the name of a
+    company named after its owner."""
+
+    code: int
+    abbreviation: str
+    name: str  # as the register spells it
+    named_after_owner: bool = False
+
+
+LEGAL_FORMS = (
+    LegalForm(310, "UAB", "Uždaroji akcinė bendrovė"),
+    LegalForm(960, "MB", "Mažoji bendrija"),
+    LegalForm(810, "IĮ", "Individuali įmonė", named_after_owner=True),
+    LegalForm(570, "VšĮ", "Viešoji įstaiga"),
+    LegalForm(320, "AB", "Akcinė bendrovė"),
+)
+
+
+def generic_words() -> list[str]:
+    """Return the words that say what a business is or where, not which one: those of the city's
+    name and of every category's keywords and Google categories."""
+    phrases = [CITY, *CITY_IN_NAMES]
+    for category in CATEGORIES:
+        phrases += [*category.keywords, *category.google_categories]
+    return [word for phrase in phrases for word in phrase.split()]

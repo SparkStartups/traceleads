@@ -110,6 +110,7 @@ def test_checks_pass_and_full_or_empty_lists_are_only_reported(stg_run):
     assert dq_results(warehouse) == {
         "stg_company_codes": ("error", 0),
         "stg_google_queries": ("warn", 84),  # one full list, 83 pages without one
+        "stg_owner_names_hidden": ("error", 0),
         "stg_sodra_fresh": ("error", 0),
         "stg_sources_have_rows": ("error", 0),
         "stg_unique_keys": ("error", 0),
@@ -148,6 +149,10 @@ def test_checks_pass_and_full_or_empty_lists_are_only_reported(stg_run):
         (
             "UPDATE stg.vmi_taxes SET ja_kodas = 1234567890 WHERE ja_kodas = 304000003",
             "stg_company_codes",
+        ),
+        (  # the register showing an IĮ owner's name
+            "UPDATE stg.jar_entities SET legal_name = 'Jono Jonaičio IĮ' WHERE legal_form = 810",
+            "stg_owner_names_hidden",
         ),
         (  # June, four months before October
             "UPDATE stg.sodra_monthly SET data_month = data_month - INTERVAL 2 MONTH",
