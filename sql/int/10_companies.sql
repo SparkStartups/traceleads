@@ -5,6 +5,7 @@ CREATE TABLE IF NOT EXISTS int.companies (
     snapshot_month DATE     NOT NULL,
     ja_kodas       INTEGER  NOT NULL,
     name           VARCHAR,            -- none for an IĮ without a trade name
+    address        VARCHAR  NOT NULL,  -- registered address
     legal_form     SMALLINT NOT NULL,
     reg_date       DATE     NOT NULL,
     brand_key      VARCHAR,
@@ -34,6 +35,7 @@ named AS (
         jar.ja_kodas,
         CASE WHEN forms.named_after_owner THEN trade_names.trade_name ELSE jar.legal_name END
             AS name,
+        jar.address,
         jar.legal_form,
         jar.reg_date,
         CASE WHEN jar.address LIKE city.name || ',%' THEN jar.address END AS city_address
@@ -53,6 +55,7 @@ SELECT
     getvariable('snapshot_month'),
     ja_kodas,
     name,
+    address,
     legal_form,
     reg_date,
     brand_key,

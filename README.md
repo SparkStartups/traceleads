@@ -9,8 +9,8 @@ numbers behind its score, and the innocent explanations to rule out first. These
 closer look, not accusations.
 
 **Status: transform.** The system is built in stages: infrastructure, collect, load, transform,
-publish, the app. The infrastructure, collection, staging tables, and the companies and places
-that linking compares are built, and October 2026 is collected.
+publish, the app. The infrastructure, collection, staging tables, and the links from Google
+places to companies are built, and October 2026 is collected.
 Each section below is updated when its part is built; the results of a real run are added at the
 end.
 
@@ -168,6 +168,23 @@ name, so "Antakalnio servisas" and a company on Antakalnio gatvė share nothing.
 activity fits when its latest activity class in Sodra is one of the category's: 56.11, 10.71,
 10.72 or 47.24 for cafés and bakeries, 95.31 for car repair, 86.23 for dental clinics. In October,
 439 of the 516 places in scope have candidates, 8,916 in all.
+
+Each candidate carries the first rule it meets, if any, and `int.links` holds one row per place in
+scope: its company, tier and deciding rule, or `unmatched` when no candidate meets a rule.
+`mart.review_queue` lists the deciding rule's candidates of every place in review, with both
+addresses; an IĮ without a trade name shows only its code and address. A link by brand and activity
+whose brand another company also uses is reported, since the brand alone may not tell which of them
+runs the place.
+
+| October, places in scope | Automatic | Review | Unmatched |
+|---|---|---|---|
+| Cafés and bakeries | 36 | 20 | 106 |
+| Car repair | 65 | 15 | 111 |
+| Dental clinics | 76 | 32 | 55 |
+| All | 177 | 67 | 272 |
+
+Of the automatic links, 69 are by brand and building, 95 by brand and activity and 13 by core name
+and building.
 
 ## Busy, and quiet on paper
 

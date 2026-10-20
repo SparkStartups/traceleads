@@ -1,6 +1,7 @@
--- Companies that could run each place in scope, with the evidence the pair shares. A pair is kept
--- when it shares the brand, the building, or a rare word on the same street: the evidence the
--- rules that link a place read.
+-- Companies that could run each place in scope, with the evidence the pair shares and the first
+-- rule of int.rules it meets. A pair is kept when it shares the brand, the building, or a rare word
+-- on the same street: the evidence the rules read. A pair kept may meet no rule, as another
+-- company in the building with an activity of its own.
 CREATE TABLE IF NOT EXISTS int.candidates (
     snapshot_month   DATE      NOT NULL,
     cid              UBIGINT   NOT NULL,
@@ -10,7 +11,8 @@ CREATE TABLE IF NOT EXISTS int.candidates (
     same_building    BOOLEAN   NOT NULL,
     same_street      BOOLEAN   NOT NULL,
     shared_words     VARCHAR[] NOT NULL,  -- rare words in both names, the street's own name aside
-    fitting_activity BOOLEAN   NOT NULL   -- the company's activity class is one of the category's
+    fitting_activity BOOLEAN   NOT NULL,  -- the company's activity class is one of the category's
+    rule             VARCHAR              -- the first rule met; none when the pair meets none
 );
 
 DELETE FROM int.candidates WHERE snapshot_month = getvariable('snapshot_month');
@@ -78,18 +80,32 @@ shared AS (
     FROM (SELECT cid, ja_kodas, unnest(common_words) AS word FROM evidence)
     SEMI JOIN rare_words USING (word)
     GROUP BY cid, ja_kodas
+),
+kept AS (
+    SELECT evidence.* EXCLUDE (common_words), coalesce(shared.shared_words, []) AS shared_words
+    FROM evidence
+    LEFT JOIN shared USING (cid, ja_kodas)
+    -- a pair that does not share the brand came from the street, so its rare words are on it
+    WHERE evidence.same_brand OR evidence.same_building OR shared.shared_words IS NOT NULL
 )
 SELECT
     getvariable('snapshot_month'),
-    evidence.cid,
-    evidence.ja_kodas,
-    evidence.same_brand,
-    evidence.same_core,
-    evidence.same_building,
-    evidence.same_street,
-    coalesce(shared.shared_words, []),
-    evidence.fitting_activity
-FROM evidence
-LEFT JOIN shared USING (cid, ja_kodas)
--- a pair that does not share the brand came from the street, so its rare words are on it
-WHERE evidence.same_brand OR evidence.same_building OR shared.shared_words IS NOT NULL;
+    cid,
+    ja_kodas,
+    same_brand,
+    same_core,
+    same_building,
+    same_street,
+    shared_words,
+    fitting_activity,
+    CASE  -- in the order of int.rules
+        WHEN same_brand AND same_building THEN 'brand_and_building'
+        WHEN same_brand AND fitting_activity THEN 'brand_and_activity'
+        WHEN same_core AND same_building THEN 'core_and_building'
+        WHEN len(shared_words) > 0 AND same_street THEN 'rare_word_on_street'
+        WHEN fitting_activity AND same_building
+            AND count(*) FILTER (WHERE fitting_activity AND same_building)
+                OVER (PARTITION BY cid) = 1
+            THEN 'only_fitting_in_building'
+    END
+FROM kept;

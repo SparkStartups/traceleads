@@ -193,6 +193,7 @@ def test_int_checks_pass_on_the_fixture_month(stg_run):
     assert stg_run.run_checks("int") == {
         "int_place_addresses": ("warn", 0),
         "int_places_in_scope": ("error", 0),
+        "int_shared_brands": ("warn", 0),
         "int_unique_keys": ("error", 0),
     }
 
