@@ -74,7 +74,8 @@ CREATE OR REPLACE MACRO int.house_number(address) AS coalesce(
     int.first_house_number(int.street_part(address))
 );
 
--- Whether two street keys name the same street. The register often spells out a first name that
--- Google gives as an initial, which keys drop: 'loretos asanaviciutes' and 'asanaviciutes'.
+-- Whether two street keys name the same street: equal, or one ends with the other, since the
+-- register often spells out a first name that Google gives as an initial, which keys drop:
+-- 'loretos asanaviciutes' and 'asanaviciutes'. It also takes 'seskines sodu' for 'sodu'.
 CREATE OR REPLACE MACRO int.same_street(a, b) AS
     a = b OR ends_with(a, ' ' || b) OR ends_with(b, ' ' || a);

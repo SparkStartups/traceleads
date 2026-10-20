@@ -126,10 +126,10 @@ an IĮ, which it hides because the name may be the owner's. A results list that 
 
 ### Transforming: companies and places
 
-The configuration in `config.py` is written into `ref` tables each time the warehouse opens: the
-Google categories of each category, the legal forms that run businesses, the city's name and
-bounds, and the generic words, those of the city's name and of the categories' keywords and
-Google categories.
+The configuration in `config.py` is written into `ref` tables each time the warehouse opens. These
+models read the Google categories of each category, the legal forms that run businesses, the
+city's name and bounds, and the generic words, those of the city's name and of the categories'
+keywords and Google categories.
 
 | Table | One row per |
 |---|---|

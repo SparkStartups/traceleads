@@ -197,11 +197,12 @@ def test_int_checks_pass_on_the_fixture_month(stg_run):
     }
 
 
-def test_a_place_in_scope_without_a_house_number_is_reported(stg_run):
+@pytest.mark.parametrize(("place", "reported"), [("Cozy", 1), ("Grey", 0)])  # Grey: a restaurant
+def test_a_place_in_scope_without_a_house_number_is_reported(stg_run, place, reported):
     stg_run.build_int(
-        "UPDATE stg.google_listings SET address = 'Dominikonų g.' WHERE name = 'Cozy'"
+        f"UPDATE stg.google_listings SET address = 'Dominikonų g.' WHERE name = '{place}'"
     )
-    assert stg_run.run_checks("int")["int_place_addresses"] == ("warn", 1)
+    assert stg_run.run_checks("int")["int_place_addresses"] == ("warn", reported)
 
 
 @pytest.mark.parametrize(
