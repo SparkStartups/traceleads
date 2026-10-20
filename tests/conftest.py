@@ -9,6 +9,7 @@ from datetime import date
 from pathlib import Path
 from typing import NamedTuple
 
+import duckdb
 import pytest
 
 from leads import tracking
@@ -262,6 +263,15 @@ def write_model(sql_dir: Path) -> Callable[[str, str], None]:
         path.write_text(sql, encoding="utf-8")
 
     return write
+
+
+@pytest.fixture(scope="session")
+def text_macros() -> Generator[duckdb.DuckDBPyConnection]:
+    """Yield an in-memory connection with the repository's text macros."""
+    with duckdb.connect() as con:
+        con.execute("CREATE SCHEMA int")
+        con.execute((REPO_SQL_DIR / "int" / "00_text.sql").read_text(encoding="utf-8"))
+        yield con
 
 
 @pytest.fixture
