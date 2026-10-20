@@ -1,1 +1,61 @@
 selection,cid,ja_kodas,rule,place,company,correct
+random,4268914880440292042,302622737,brand_and_activity,"UAB ""ANVISIMA""","UAB ""ANVISIMA""",yes
+random,5585081719339159450,305024563,brand_and_activity,UAB KARSERVISAS,"UAB ""Karservisas""",yes
+random,7294069919036867508,303016183,brand_and_activity,City-Dent,UAB City-Dent,yes
+random,7741000852557541352,300128152,brand_and_activity,Deacar,"Uždaroji akcinė bendrovė ""Deacar""",yes
+random,10090389615681987552,304409481,brand_and_activity,"ETA Auto autoservisas UAB ""Fenomenas""","UAB ""Fenomenas""",yes
+random,11306479983498421584,305709987,brand_and_activity,Salduma,"UAB ""Salduma""",yes
+random,12327784843212211228,125515482,brand_and_activity,Autolyga,"UAB ""AUTOLYGA""",yes
+random,13059539871552548325,125257231,brand_and_activity,"Ratima,UAB","Uždaroji akcinė bendrovė ""RATIMA""",yes
+random,13765606054526810593,302428892,brand_and_activity,Gigakepykla,"UAB ""Gigakepykla""",yes
+random,13944310211535014571,259930760,brand_and_activity,Bijola,"Uždaroji akcinė bendrovė ""Bijola""",yes
+random,1181020014590191369,125367126,brand_and_building,Serapis,"UAB ""SERAPIS""",yes
+random,1779580353983385970,301108074,brand_and_building,Diadenta,UAB DIADENTA,yes
+random,3802921129469611147,125972876,brand_and_building,Autosigra,"UAB ""Autosigra""",yes
+random,6215227675988203533,125522719,brand_and_building,Tomo autoservisas,UAB TOMO AUTOSERVISAS,yes
+random,10012025736637572336,121579078,brand_and_building,UAB „Dantų Aibė“,"""Dantų aibė"", UAB",yes
+random,13098218652689872392,303033916,brand_and_building,MB Auto Dominus,"MB ""Auto Dominus""",yes
+random,13899388456883128108,305464840,brand_and_building,"Odontologijos namai ""Balta lapė""","UAB odontologijos namai ""Balta lapė""",yes
+random,14652218587669348136,121848571,brand_and_building,Sveiki dantys Jums,"UAB ""Sveiki dantys Jums""",yes
+random,15656214098751176176,124975855,brand_and_building,"UAB ""Odontologijos klinika 32""","UAB ""Odontologijos klinika 32""",yes
+random,17643140201114446793,123856061,brand_and_building,Revirsa,"Uždaroji akcinė bendrovė ""Revirsa""",yes
+random,122462892969839253,304507819,core_and_building,Švitrigailos odontologijos klinika,MB Švitrigailos klinika,yes
+random,6241205659021580959,125847011,core_and_building,MAG Dent odontologijos klinika,UAB MAG Dent,yes
+random,7761371643083725442,122534029,core_and_building,Odontologijos klinika Gidenta,"UAB ""Gidenta""",yes
+random,8002677709597061326,304453481,core_and_building,Dentaminta odontologijos klinika,"UAB ""Dentaminta""",yes
+random,8407378174082425966,304686400,core_and_building,Vingio klinika | Odontologijos klinika,UAB Vingio klinika,yes
+random,9719398844222263914,307103486,core_and_building,Gabidenta - Odontologijos klinika,"MB ""Gabidenta""",yes
+random,12465071474240019449,125957582,core_and_building,Dentastra Odontologijos klinika,"UAB ""DENTASTRA""",yes
+random,15276366750919363692,305094490,core_and_building,Odontologijos klinika Dantų specialistai,"UAB ""Dantų specialistai""",yes
+random,16684351017639246785,304744444,core_and_building,Skaitmeninės Šypsenos odontologijos klinika Vilniuje,"UAB ""Skaitmeninės šypsenos""",yes
+random,17644390434084051399,124254339,core_and_building,Tuskulėnų servisas,"Uždaroji akcinė bendrovė ""TUSKULĖNŲ AUTOSERVISAS""",yes
+random,1273765745151445146,300560009,only_fitting_in_building,Dantukų pasaulis,"UAB ""Projektai I.N.K.""",
+random,3047293322987369508,123685589,only_fitting_in_building,,,
+random,3536036935752360687,303496444,only_fitting_in_building,Taste Map Coffee Roasters,"UAB ""Agerosa""",
+random,4955656550888370561,124828976,only_fitting_in_building,Pyraginė,"Uždaroji akcinė bendrovė ""LEOGINTA""",
+random,7846767712467356264,121725273,only_fitting_in_building,Autoservisas Vilniuje,"ABS AUTOSERVISAS, UAB",yes
+random,8625087083261943885,305227510,only_fitting_in_building,Clafuti,"UAB ""Daugiau skonio""",
+random,9074915074109529072,126238771,only_fitting_in_building,Bãlo klinika (Fabijoniškių sveikatos centras),"UAB ""FABIJONIŠKIŲ SVEIKATOS CENTRAS""",yes
+random,10440073538556199452,304058317,only_fitting_in_building,Automobilių priežiūra ir remontas,"UAB ""Autohidraulika""",
+random,15948928747612872837,305125886,only_fitting_in_building,Kmyninė kepykla (Duona),"UAB ""SOMM""",
+random,16524322453465344714,124491377,only_fitting_in_building,Mackevičių odontologijos klinika,UAB A. Mackevičiaus odontologijos klinika,yes
+random,897277897431814,225275440,rare_word_on_street,Bosch Car Service - Autovisatos servisas,"UAB ""AUTOVISATOS SERVISAS""",yes
+random,361446837193689169,304074976,rare_word_on_street,Burnos higienos klinika - KlinikaDent | odontologijos paslaugos,UAB Higienos centras,no
+random,3550276389481893013,304638284,rare_word_on_street,Lavesa odontologija,"UAB ""Lavesa""",yes
+random,5605015172747611053,303437385,rare_word_on_street,Druska Miltai Vanduo Paupys,"UAB ""DG Paupys""",no
+random,8861047101900164969,125740970,rare_word_on_street,"Slėnio klinika, odontologijos klinika, GRAŽŪS DANTYS","UAB ""GRAŽŪS DANTYS""",yes
+random,8888786662394532271,300090890,rare_word_on_street,Studio Dentis I Estetinės odontologijos klinika,"UAB ""Studio dentis""",yes
+random,10476873038293139193,302635706,rare_word_on_street,Mon Ami. Tikros duonos ir legendinių tortų namai.,UAB Mon Dream,no
+random,14197789242326203437,123006255,rare_word_on_street,H. Stankevičiaus autoservisas,"MB ""H. Stankevičiaus Autoserviso Įmonė""",yes
+random,14762492290479108254,304438796,rare_word_on_street,Elidenta Protezavimo ir Implantologijos Klinika,"UAB ""Elidenta ir partneriai""",yes
+random,16918022672247852195,225253020,rare_word_on_street,Pas Suvalkietę,"UŽDAROJI AKCINĖ BENDROVĖ ""PAS SUVALKIETĘ""",yes
+flagged,2745907311000935036,300626530,brand_and_activity,Pabridentas,"UAB ""Pabridentas""",yes
+flagged,7741000852557541352,300128152,brand_and_activity,Deacar,"Uždaroji akcinė bendrovė ""Deacar""",yes
+flagged,8385669108562125434,302949863,brand_and_activity,Latransa autoservisas,UAB Latransa autoservisas,yes
+flagged,9182136202646718283,123797296,brand_and_activity,Juvelda,"Uždaroji akcinė bendrovė ""JUVELDA""",yes
+flagged,9796437481093276573,175016610,brand_and_activity,Švytintys dantys,"UAB ""Švytintys dantys""",yes
+flagged,11306479983498421584,305709987,brand_and_activity,Salduma,"UAB ""Salduma""",yes
+flagged,13877340122821333660,125664031,brand_and_activity,Anrevika,"UAB ""ANREVIKA""",yes
+flagged,14787962701199033053,300118304,brand_and_activity,RSE auto,"""RSE AUTO"", UAB",yes
+flagged,17098605819536639825,220457460,brand_and_activity,Rimo servisas,"UAB ""Rimo servisas""",yes
+flagged,7204758384132916981,120719965,brand_and_building,Dentara,"UAB ""Dentara""",yes

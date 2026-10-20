@@ -177,12 +177,12 @@ addresses, except an IĮ's registered address; an IĮ without a trade name shows
 link by brand and activity whose brand another company also uses is reported, since the brand
 alone may not tell which of them runs the place.
 
-| October, places in scope | Automatic | Review | Unmatched |
-|---|---|---|---|
-| Cafés and bakeries | 36 | 20 | 106 |
-| Car repair | 65 | 15 | 111 |
-| Dental clinics | 76 | 32 | 55 |
-| All | 177 | 67 | 272 |
+| October, places in scope | Automatic | Review | Rejected | Unmatched |
+|---|---|---|---|---|
+| Cafés and bakeries | 36 | 18 | 2 | 106 |
+| Car repair | 65 | 15 | 0 | 111 |
+| Dental clinics | 76 | 31 | 1 | 55 |
+| All | 177 | 64 | 3 | 272 |
 
 Of the automatic links, 69 are by brand and building, 95 by brand and activity and 13 by core name
 and building.
@@ -194,7 +194,23 @@ A link labelled wrong is `rejected`: it is never scored and leaves the review qu
 `mart.match_precision` gives each rule's precision on its random labels with a 95% Wilson interval;
 flagged links stay out of it, since they were not drawn at random. A label whose selection or
 verdict cannot be read stops the build, and a label whose link the rules no longer make is reported.
-The file has only its header until the October sample is labelled.
+The October sample is 10 links per rule drawn at random and the 10 flagged companies' links. Its
+verdicts are proposed from names, addresses and activity codes and still to be checked by hand:
+50 yes, 3 no, and 7 left blank where names and addresses cannot tell.
+
+| Rule | Tier | Labelled | Right | Precision (95% interval) |
+|---|---|---|---|---|
+| 1 brand and building | automatic | 10 | 10 | 1.00 (0.72–1.00) |
+| 2 brand and activity | automatic | 10 | 10 | 1.00 (0.72–1.00) |
+| 3 core name and building | automatic | 10 | 10 | 1.00 (0.72–1.00) |
+| 4 rare word on the street | review | 10 | 7 | 0.70 (0.40–0.89) |
+| 5 only fitting company in the building | review | 3 | 3 | 1.00 (0.44–1.00) |
+
+The 7 blank verdicts are all rule 5's: its places' names are too generic to tell, so its 3 of 3
+are the easy cases and do not yet measure the rule.
+
+The three wrong links share only a generic word with the place; they are rejected, so the review
+queue holds 69 rows instead of 72. Every flagged company's link is right, so the list is unchanged.
 
 ## Busy, and quiet on paper
 
