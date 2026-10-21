@@ -8,12 +8,18 @@ similar businesses. Every lead carries the listing and the official records it r
 numbers behind its score, and the innocent explanations to rule out first. These are leads for a
 closer look, not accusations.
 
-**Status: app.** The system is built in stages: infrastructure, collect, load, transform,
-publish, the app. The infrastructure, collection, staging tables, the links from Google places
-to companies, the linked companies' facts and scores, the lead list and the app are built, and
-October 2026 is collected.
-Each section below is updated when its part is built; the results of a real run are added at the
-end.
+## October 2026
+
+The committed run is October 2026, and its list is `output/2026-10/leads.csv`.
+
+- 84 Google Maps searches found 745 places; 516 are in Vilnius under a Google category of the
+  category that searched for them.
+- 177 places link automatically to 157 companies; 64 wait in the review queue, 3 links were
+  labelled wrong, and 272 places found no company.
+- Of the 157 companies, 8 are held without a judgement and 149 are judged: 2 leads, both car
+  repair shops, and 8 on watch.
+- Cafés and bakeries have the highest flagged share, 11% (2 of 19 judged), then car repair, 9% (5
+  of 57), and dental clinics, 4% (3 of 73).
 
 ## Scope
 
@@ -33,6 +39,12 @@ end.
 | Google Maps, rendered through the Oxylabs Web API | per place: id, name, Google category, address, coordinates, review count, closed flag |
 
 Only the fields the system uses are kept.
+
+Registrų centras, Sodra and VMI (through data.gov.lt) publish these files as open data. Collecting
+stays light: one pass a month, every request the collector makes with the project's own User-Agent,
+and every file saved in `data/raw/` so that a rerun downloads only what is missing and a build reads
+only the saved snapshot. Google Maps pages are rendered by the Oxylabs Web API, a paid service, and
+from each place only the fields above are kept, with no review text and nothing about reviewers.
 
 Individual enterprises (IĮ) are one person's business, and their names are often the owner's
 name. The register already hides them. From VMI the snapshot keeps only the last quoted part of a
@@ -139,9 +151,10 @@ keywords and Google categories.
 
 A place is `in_scope` inside the city's bounds with a Google category of the category that found
 it, else `outside_city` (a search by eldership also finds Kaunas' Verkiai) or `other_activity` (a
-café search also finds restaurants, and places that show no Google category). In October, 516 of 745 places are in scope: 162 cafés and
-bakeries, 191 car repair shops and 163 dental clinics. The checks stop the build when a key
-repeats or no place is in scope, and report places in scope without a street or house number.
+café search also finds restaurants, and places that show no Google category). In October, 516
+of 745 places are in scope: 162 cafés and bakeries, 191 car repair shops and 163 dental clinics.
+The checks stop the build when a key repeats or no place is in scope, and report places in scope
+without a street or house number.
 
 ## Linking a place to a company
 
@@ -301,14 +314,114 @@ left out of the list and the review queue, since it is often its owner's home. T
 register or Google that a spreadsheet would run as a formula (starting with `=`, `+`, `-`, `@`, a
 tab or a carriage return) is quoted in the file, since anyone can name a place on Google.
 
-## Trusting the list
+## How the list is checked
 
-- **Data-quality checks** after every layer; a failing blocking check stops the build and
-  nothing is published.
-- **Link precision** per rule from the hand-labelled sample, with a 95% interval.
-- **Sensitivity:** the lead list under other gap ratios and busy cutoffs.
-- **Coverage:** from places found to companies judged, per category.
-- **Reproducibility:** a rebuild of the committed snapshot gives the committed lead list.
+The cost of flagging an honest business shapes each step:
+
+- **Only confident links are scored.** The three automatic rules are right in all 30 links
+  sampled, and every flagged company's link is labelled right. A place two companies could run,
+  or one linked by a single shared word or by its building alone, waits for a person.
+- **Both figures, and peers.** A lead needs a staff gap and a tax gap against at least 5 similar
+  companies; one gap only puts a company on watch. 8 companies are held, with the reason shown,
+  rather than judged on missing data.
+- **Data-quality checks** run after every layer: 15 in October's build. The 11 that block a
+  build all pass; of the 4 warnings, two report rows: 35 results lists that came back empty (7)
+  or full (28, so they may have left places out), and 24 places in scope without a street or
+  house number.
+- **Sensitivity:** both leads stay leads at a gap of a half or a third with any minimum of
+  reviews.
+- **Coverage:** each category followed from the places Google showed to the companies judged.
+- **Reproducibility:** a test rebuilds the committed snapshot and compares the lead list byte for
+  byte; the tests need no network, and CI runs them, the lint and the build on every push.
+
+## Limitations
+
+Where the list can be wrong, measured on October.
+
+**Wrong matches**
+
+- **A brand anywhere.** Rule 2 links by brand and activity wherever the company is registered, so 28
+  of the 177 automatic links reach companies registered outside the city, 9 of them in Šiauliai, and
+  3 more reach companies at a 'Vilniaus m. sav.' address without a Vilnius street: a chain run from
+  elsewhere, or a namesake. One company on watch is registered outside the city.
+- **One company, many places.** A café chain links to 9 places, whose reviews are summed; 7
+  companies link to more than one place, and none of them is flagged.
+- **Addresses the keys miss.** Building keys are read only from an address that starts 'Vilnius,'.
+  812 active companies are registered at one that starts 'Vilniaus m. sav.': 478 with nothing more,
+  334 in Grigiškės and nearby villages, with a street and number the keys do not read. Only rule 2
+  can link them: in October it links 3, one to a place in its own building in Grigiškės, which rule
+  1 would have found.
+- **Streets that end alike.** A street counts as the same when its key ends with the other's, for a
+  first name the register spells out ('loretos asanaviciutes' and 'asanaviciutes'); it also takes
+  'seskines sodu' for 'sodu'. 32 register street pairs end alike, 22 of them in 'sodu'. In October
+  18 such pairs join a place and a company: 3 automatic links and 2 candidates in review rest on a
+  spelled-out first name, as meant, and the one 'sodu' pair links nothing.
+- **Individual enterprises.** 3 of the 177 automatic links reach an IĮ. Most IĮ keep no name after
+  masking, so they can only reach the review queue, through their building.
+- **Small samples.** Each rule's precision rests on at most 10 labelled links: the automatic rules'
+  interval starts at 0.72, rule 4 is right in 7 of 10, and rule 5 is not measured yet. The verdicts
+  are proposed and still to be checked by an analyst.
+
+**False positives**
+
+- **Lifetime reviews.** Reviews accumulate, so a place busy years ago still looks busy; one month
+  cannot show which reviews are recent.
+- **Work off the payroll.** Sodra counts insured people only: contractors, family help and owners of
+  an MB beyond the one counted look like missing staff.
+- **Revenue in another company.** VMI reports tax per company, so a business that bills through a
+  related company looks quiet; the dental clinics carry this explanation.
+- **Exactly a third.** The gap is compared in floating point: staff of 2 against a median of 6
+  counts as a gap (one October company, not busy, so not flagged), but 1.1 against 3.3 does not.
+- **Places Google left out.** A full results list may hide places, so a company's reviews can be
+  undercounted, and a busy business missed.
+
+## Roadmap
+
+**Scalability: from three categories in Vilnius to every business in Lithuania**
+
+- The declared side already covers the country: the register, Sodra and VMI files hold every
+  company, and only the city and the categories narrow them. A category is one entry in `config.py`.
+- Google is the limit: a keyword per eldership gives 84 pages for three categories in one city.
+  Nationally, search map tiles per category, split a tile whose list is full, and render
+  concurrently through Oxylabs' asynchronous API.
+- Snapshots move from git (about 12.5 MB a month) to object storage, partitioned by month and
+  source; DuckDB reads Parquet there in place, and a build adds the new month instead of rebuilding
+  all of them once that gets slow.
+
+**Accuracy of matching and scoring**
+
+- More evidence per link: VMI cash-register and food-safety premises addresses, company codes on
+  business websites, and geocoded register addresses instead of street keys.
+- Larger labelled samples per rule, with precision tracked each month, and a person's verdict in the
+  review queue linking the place.
+- Busy measured by reviews gained between monthly snapshots, not lifetime totals.
+- Gap and busy limits calibrated on inspection outcomes once VMI returns them; until then the
+  sensitivity grid shows what each choice changes.
+
+**Data freshness and updates**
+
+- Each source on its own clock: the register changes daily, Sodra publishes monthly about four weeks
+  late, VMI refreshes this year's row monthly and closes a year in January, and listings change any
+  day. Collect each when its file changes (its date or SHA-256), not all at once.
+- A stale source already stops the build (Sodra more than three months old); the other sources get
+  the same check.
+- Re-render flagged and queued places more often than the rest.
+
+**Monitoring, observability and data quality**
+
+- Already: every run with its commit and duration in `meta.pipeline_runs`, every check's count and
+  first rows in `meta.dq_results`, both shown in the app.
+- Next: an alert when a build fails or a warning's count jumps, month-over-month checks of rows per
+  source and category, and each run's render failures and cost.
+
+**Cost**
+
+- The registers are free downloads; Google rendering is the only paid part: 84 pages a month, each
+  rendered up to five times, since about one render in four comes back without the page's JavaScript
+  run.
+- At scale: re-render only lists that were full or changed, search by tile so no page is spent on
+  another city, and, if its terms come to allow kept monthly snapshots, weigh a Google Places API
+  licence against rendering.
 
 ## The analyst's app
 
@@ -332,8 +445,8 @@ tab or a carriage return) is quoted in the file, since anyone can name a place o
 
 The app reads the published warehouse only: each query opens its own read-only connection, with
 no access to other files, two threads and 1 GB of memory. The pages' queries are cached until a
-rebuild replaces the file, which it can do while the app runs. It sends Streamlit no usage statistics
-(`.streamlit/config.toml`).
+rebuild replaces the file, which it can do while the app runs. It sends Streamlit no usage
+statistics (`.streamlit/config.toml`).
 
 ## Run it
 
