@@ -98,6 +98,70 @@ def leads() -> None:
     )
 
 
+def overview() -> None:
+    st.title("Overview")
+    month = month_choice()
+    st.subheader("Categories")
+    st.caption(
+        "From the places Google showed, through scope and links, to the companies judged. The "
+        "flagged share is leads and watch among the judged companies."
+    )
+    st.dataframe(
+        data.query(
+            "SELECT * EXCLUDE (snapshot_month) FROM mart.category_summary "
+            "WHERE snapshot_month = ? ORDER BY category",
+            [month],
+        ),
+        hide_index=True,
+        column_config={"flagged_share": st.column_config.NumberColumn(format="percent")},
+    )
+    st.subheader("Sensitivity")
+    st.caption(
+        "The judged companies tiered again under each gap ratio and minimum of reviews, and "
+        "how many of the month's leads stay leads; `scoring` marks the limits the list uses."
+    )
+    st.dataframe(
+        data.query(
+            "SELECT round(grid.gap_ratio, 2) AS gap_ratio, grid.min_reviews, grid.leads, "
+            "grid.watch, grid.leads_kept, grid.gap_ratio = scoring.gap_ratio "
+            "AND grid.min_reviews = scoring.min_reviews AS scoring "
+            "FROM mart.sensitivity AS grid CROSS JOIN ref.scoring "
+            "WHERE grid.snapshot_month = ? ORDER BY grid.gap_ratio DESC, grid.min_reviews",
+            [month],
+        ),
+        hide_index=True,
+    )
+
+
+def month_over_month() -> None:
+    st.title("Month over month")
+    month = month_choice()
+    st.caption(
+        "The month's scored companies against the month built before it, with what moved them. "
+        "Every build scores all months with the same code, so a change comes from the data."
+    )
+    changes = data.query(
+        "SELECT changes.change, changes.previous_tier, changes.tier, changes.ja_kodas, "
+        "coalesce(now.name, before.name) AS company, changes.category, "
+        "array_to_string(changes.causes, '; ') AS causes "
+        "FROM mart.month_over_month AS changes "
+        "LEFT JOIN int.companies AS now "
+        "ON now.snapshot_month = changes.snapshot_month AND now.ja_kodas = changes.ja_kodas "
+        "LEFT JOIN int.companies AS before "
+        "ON before.snapshot_month = changes.previous_month AND before.ja_kodas = changes.ja_kodas "
+        "WHERE changes.snapshot_month = ? "
+        "ORDER BY changes.change, changes.category, changes.ja_kodas",
+        [month],
+    )
+    if changes.empty:
+        st.info("No month was built before this one.")
+        return
+    st.dataframe(changes.value_counts("change").rename("companies"))
+    if not st.toggle("Unchanged companies too"):
+        changes = changes[changes["change"] != "unchanged"]
+    st.dataframe(changes, hide_index=True)
+
+
 def month_choice() -> date:
     """Return the snapshot month picked in the sidebar; stop the page without a warehouse."""
     if not data.warehouse_exists():

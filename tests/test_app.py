@@ -166,3 +166,62 @@ def test_queries_run_on_two_threads_and_1_gb(built):
 def test_queries_cannot_write_read_files_or_change_settings(built, sql):
     with pytest.raises(duckdb.Error):
         data.query(sql)
+
+
+@pytest.fixture
+def two_months(flagged: Path) -> Path:
+    """Score the lead a month earlier as watched and named otherwise, beside a company unchanged
+    in both months and one scored in the earlier month only."""
+    september = "DATE '2026-09-01'"
+    with duckdb.connect(Settings(flagged).warehouse_path) as con:
+        con.execute(
+            "INSERT INTO mart.company_facts SELECT * REPLACE (304100002 AS ja_kodas) "
+            "FROM mart.company_facts;"
+            "INSERT INTO mart.scores SELECT * REPLACE (304100002 AS ja_kodas, "
+            "'not_flagged' AS tier, NULL AS rank, 1.0 AS staff_ratio, false AS staff_gap, "
+            "1.0 AS tax_ratio, false AS tax_gap) FROM mart.scores;"
+            f"INSERT INTO int.companies SELECT * REPLACE ({september} AS snapshot_month, "
+            f"CASE WHEN ja_kodas = {CODE} THEN 'UAB \"Cosy\"' ELSE name END AS name) "
+            "FROM int.companies;"
+            f"INSERT INTO mart.company_facts SELECT * REPLACE ({september} AS snapshot_month) "
+            "FROM mart.company_facts;"
+            f"INSERT INTO mart.scores SELECT * REPLACE ({september} AS snapshot_month, "
+            f"CASE WHEN ja_kodas = {CODE} THEN 'watch' ELSE tier END AS tier) FROM mart.scores;"
+            f"INSERT INTO int.companies (snapshot_month, ja_kodas, name, address, legal_form, "
+            f"reg_date) VALUES ({september}, 304100003, 'UAB \"Gone\"', 'Vilnius', 310, "
+            "DATE '2018-01-01');"
+            "INSERT INTO mart.company_facts SELECT * REPLACE (304100003 AS ja_kodas) "
+            f"FROM mart.company_facts WHERE snapshot_month = {september} AND ja_kodas = {CODE};"
+            "INSERT INTO mart.scores SELECT * REPLACE (304100003 AS ja_kodas) "
+            f"FROM mart.scores WHERE snapshot_month = {september} AND ja_kodas = 304100002;"
+        )
+    return flagged
+
+
+def test_the_overview_shows_the_month_s_categories_and_sensitivity_grid(two_months):
+    page = run_page("overview")
+    categories, grid = (frame.value for frame in page.dataframe)
+    shown = categories[["category", "places", "judged", "leads", "flagged_share"]]
+    assert shown.values.tolist() == [["cafes_bakeries", 20, 2, 1, 0.5]]  # October's only
+    assert '"format": "percent"' in page.dataframe[0].proto.columns
+    assert len(grid) == 9
+    scoring = grid[grid["scoring"]]
+    assert scoring[["gap_ratio", "min_reviews", "leads"]].values.tolist() == [[0.33, 50, 1]]
+
+
+def test_the_month_over_month_page_counts_the_changes_and_lists_them(two_months):
+    page = run_page("month_over_month")
+    counts, listed = (frame.value for frame in page.dataframe)
+    assert counts["companies"].to_dict() == {"gone": 1, "tier changed": 1, "unchanged": 1}
+    columns = ["change", "previous_tier", "tier", "ja_kodas", "company"]
+    assert listed[columns].fillna("-").values.tolist() == [
+        ["gone", "not_flagged", "-", 304100003, 'UAB "Gone"'],  # named as it was
+        ["tier changed", "watch", "lead", CODE, 'UAB "Cozy"'],  # named as it is now
+    ]
+    page.toggle[0].set_value(True).run()
+    assert page.dataframe[1].value["ja_kodas"].tolist() == [304100003, CODE, 304100002]
+
+
+def test_the_month_over_month_page_says_when_no_month_came_before(flagged):
+    page = run_page("month_over_month")
+    assert page.info[0].value == "No month was built before this one."

@@ -10,8 +10,8 @@ closer look, not accusations.
 
 **Status: app.** The system is built in stages: infrastructure, collect, load, transform,
 publish, the app. The infrastructure, collection, staging tables, the links from Google places
-to companies, the linked companies' facts and scores, the lead list and the app's leads page are
-built, and October 2026 is collected.
+to companies, the linked companies' facts and scores, the lead list and the app's leads, overview
+and month-over-month pages are built, and October 2026 is collected.
 Each section below is updated when its part is built; the results of a real run are added at the
 end.
 
@@ -315,16 +315,18 @@ tab or a carriage return) is quoted in the file, since anyone can name a place o
   its places with Google Maps links and the queries that found them, its register record (an
   IĮ's address withheld), its insured people in the months scored, its VMI rows and the raw files
   they came from, with their SHA-256.
-- **Overview:** the share flagged per category, sensitivity, coverage.
-- **Month over month:** what changed since the previous snapshot.
+- **Overview:** per category, the places Google showed through scope and links to the companies
+  judged, with the flagged share; the sensitivity grid, the scoring's own limits marked.
+- **Month over month:** the changes since the month built before, counted and listed with their
+  causes; unchanged companies on request.
 - **Matching:** precision per rule and the review queue.
 - **Runs and checks:** each build and its check results.
 - **SQL console:** the analyst's own questions on a read-only connection, with saved queries.
 
-The leads page is built. The app reads the published warehouse only: each query opens its own
-read-only connection, with no access to other files, two threads and 1 GB of memory, and is cached
-until a rebuild replaces the file, which it can do while the app runs. It sends Streamlit no
-usage statistics (`.streamlit/config.toml`).
+The leads, overview and month-over-month pages are built. The app reads the published warehouse
+only: each query opens its own read-only connection, with no access to other files, two threads
+and 1 GB of memory, and is cached until a rebuild replaces the file, which it can do while the app
+runs. It sends Streamlit no usage statistics (`.streamlit/config.toml`).
 
 ## Run it
 
