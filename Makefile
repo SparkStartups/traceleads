@@ -1,4 +1,4 @@
-.PHONY: test lint format collect build
+.PHONY: test lint format collect build app
 
 test:
 	uv run pytest
@@ -17,3 +17,6 @@ collect:
 
 build:
 	uv run leads build
+
+app:
+	uv run streamlit run src/leads/app/main.py

@@ -8,10 +8,10 @@ similar businesses. Every lead carries the listing and the official records it r
 numbers behind its score, and the innocent explanations to rule out first. These are leads for a
 closer look, not accusations.
 
-**Status: publish.** The system is built in stages: infrastructure, collect, load, transform,
+**Status: app.** The system is built in stages: infrastructure, collect, load, transform,
 publish, the app. The infrastructure, collection, staging tables, the links from Google places
-to companies, the linked companies' facts and scores, and the lead list are built, and October
-2026 is collected.
+to companies, the linked companies' facts and scores, the lead list and the app's leads page are
+built, and October 2026 is collected.
 Each section below is updated when its part is built; the results of a real run are added at the
 end.
 
@@ -311,13 +311,20 @@ tab or a carriage return) is quoted in the file, since anyone can name a place o
 
 ## The analyst's app
 
-- **Leads:** the month's list. A chosen company shows its places with Google Maps links, its
-  register record, its Sodra months, its VMI row and the raw files they came from.
+- **Leads:** the month's list. A chosen company shows its reason, its innocent explanations,
+  its places with Google Maps links and the queries that found them, its register record (an
+  IĮ's address withheld), its insured people in the months scored, its VMI rows and the raw files
+  they came from, with their SHA-256.
 - **Overview:** the share flagged per category, sensitivity, coverage.
 - **Month over month:** what changed since the previous snapshot.
 - **Matching:** precision per rule and the review queue.
 - **Runs and checks:** each build and its check results.
 - **SQL console:** the analyst's own questions on a read-only connection, with saved queries.
+
+The leads page is built. The app reads the published warehouse only: each query opens its own
+read-only connection, with no access to other files, two threads and 1 GB of memory, and is cached
+until a rebuild replaces the file, which it can do while the app runs. It sends Streamlit no
+usage statistics (`.streamlit/config.toml`).
 
 ## Run it
 
@@ -331,7 +338,8 @@ This builds the image and runs `leads build`, which rebuilds the warehouse from
 `data/snapshots/` into `warehouse/leads.duckdb` and writes each month's lead list to
 `output/<month>/leads.csv`. With no month in `data/snapshots/` it stops,
 reports that there is no snapshot and exits with code 1. Runs in Docker record their commit as
-`unknown`: the image holds no git history.
+`unknown`: the image holds no git history. When the build succeeds, the app serves the
+published warehouse at http://localhost:8501.
 
 `docker compose run --rm pipeline collect` collects the current month in Docker.
 
@@ -345,6 +353,7 @@ make lint     # check the lock file, lint and formatting
 make format   # apply lint fixes and formatting
 make collect  # download the current month's sources and write its snapshot (needs .env)
 make build    # rebuild the warehouse from every snapshot month
+make app      # serve the app on the published warehouse at http://localhost:8501
 ```
 
 CI runs `make lint test build` on every push, so every push also builds the committed snapshots.

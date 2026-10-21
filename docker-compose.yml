@@ -1,6 +1,7 @@
 services:
   pipeline:
     build: .
+    image: leads
     pull_policy: build  # rebuild the image on every `up`, so it never runs stale code
     env_file:  # the Oxylabs key, which only `collect` needs
       - path: .env
@@ -9,3 +10,14 @@ services:
       - ./data:/app/data
       - ./warehouse:/app/warehouse
       - ./output:/app/output
+  app:
+    image: leads
+    pull_policy: never  # the image the pipeline service builds
+    depends_on:
+      pipeline:
+        condition: service_completed_successfully
+    entrypoint: ["streamlit", "run", "src/leads/app/main.py", "--server.address=0.0.0.0"]
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./warehouse:/app/warehouse:ro

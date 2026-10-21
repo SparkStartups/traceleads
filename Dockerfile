@@ -15,6 +15,7 @@ COPY src ./src
 RUN uv sync --locked --no-dev --no-editable
 
 COPY sql ./sql
+COPY .streamlit ./.streamlit
 
 ENTRYPOINT ["leads"]
 CMD ["build"]

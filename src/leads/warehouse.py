@@ -156,7 +156,8 @@ def _replace(source: Path, target: Path) -> None:
         except PermissionError as exc:
             if attempt == PUBLISH_ATTEMPTS:
                 raise PublishError(
-                    f"{target} stayed open in another program (a SQL client or a spreadsheet); "
+                    f"{target} stayed open in another program (the app, a SQL client or a "
+                    "spreadsheet); "
                     "close it and rerun"
                 ) from exc
             time.sleep(PUBLISH_RETRY_SECONDS)
