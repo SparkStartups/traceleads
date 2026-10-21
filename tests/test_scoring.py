@@ -40,7 +40,7 @@ def facts(stg_run, *changes: str) -> dict[int, tuple]:
     stg_run.warehouse.run_layer(stg_run.run, "mart")
     rows = stg_run.rows(
         "SELECT ja_kodas, category, places, reviews, closed, owner_operated, reg_date, "
-        "insured_3m, tax_year, tax FROM mart.company_facts"
+        "insured, tax_year, tax FROM mart.company_facts"
     )
     return {code: tuple(fact) for code, *fact in rows}
 

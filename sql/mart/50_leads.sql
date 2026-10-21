@@ -1,6 +1,8 @@
 -- The lead list: leads, then watch, in rank order, each with the numbers behind its tier, the
 -- Google places it rests on, a one-line reason and the innocent explanations to rule out first.
 -- An IĮ's registered address is withheld: it is often its owner's home.
+CREATE OR REPLACE MACRO mart.maps_url(cid) AS 'https://www.google.com/maps?cid=' || cid;
+
 CREATE OR REPLACE VIEW mart.leads AS
 WITH places AS (
     SELECT
@@ -8,7 +10,7 @@ WITH places AS (
         links.ja_kodas,
         string_agg(
             concat_ws(', ', places.name, places.address)
-                || ' https://www.google.com/maps?cid=' || places.cid,
+                || ' ' || mart.maps_url(places.cid),
             '; ' ORDER BY places.review_count DESC, places.cid
         ) AS places
     FROM int.links AS links

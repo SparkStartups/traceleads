@@ -202,13 +202,15 @@ MATCHING = Matching(rare_word_max_names=30, rare_word_min_letters=3)
 
 @dataclass(frozen=True)
 class Scoring:
-    """How a company is judged. It is compared with at least ``min_peers`` peers of its category
+    """How a company is judged. Its staff is the average insured over Sodra's latest
+    ``staff_months`` months. It is compared with at least ``min_peers`` peers of its category
     and legal-form group, or held; with its review tercile's alone when that leaves at least
     ``min_tercile_peers``. It is busy with at least its category's median reviews and
     ``min_reviews``; a staff or tax gap is a figure at most ``gap_ratio`` of the peers' median.
     It carries an innocent explanation when registered in its tax year or at most ``young_months``
     months before it, or with nobody insured and tax under ``little_tax`` euros."""
 
+    staff_months: int
     min_peers: int
     min_tercile_peers: int
     min_reviews: int
@@ -218,6 +220,7 @@ class Scoring:
 
 
 SCORING = Scoring(
+    staff_months=3,
     min_peers=5,
     min_tercile_peers=8,
     min_reviews=50,

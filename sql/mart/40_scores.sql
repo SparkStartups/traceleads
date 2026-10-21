@@ -47,7 +47,7 @@ INSERT INTO mart.scores
 WITH companies AS (
     SELECT
         *,
-        insured_3m + owner_operated::INTEGER AS staff,
+        insured + owner_operated::INTEGER AS staff,
         CASE
             WHEN closed THEN 'closed'
             -- registered after January of the tax year, so it paid tax for part of it only
@@ -151,7 +151,7 @@ SELECT
             CASE WHEN companies.places > 1
                 THEN 'runs ' || companies.places || ' places; peers run one' END,
             category_explanations.explanation,
-            CASE WHEN companies.insured_3m = 0 AND companies.tax < scoring.little_tax
+            CASE WHEN companies.insured = 0 AND companies.tax < scoring.little_tax
                 THEN 'nobody insured and almost no tax: it may no longer run the place' END
         ],
         lambda explanation: explanation IS NOT NULL
