@@ -296,6 +296,22 @@ def test_the_review_queue_withholds_an_ii_s_registered_address(stg_run, legal_fo
     assert stg_run.rows("SELECT company, company_address FROM mart.review_queue") == [shown]
 
 
+def test_the_review_queue_counts_the_companies_in_the_candidate_s_building(stg_run):
+    stg_run.build_int(
+        company(304100001, 'MB "Rytas"', COZY_BUILDING, "561100"),  # the only fitting company
+        company(304100002, 'UAB "Zeta"', "Vilnius, Dominikonų g. 10-7, LT-01120", "862300"),
+        company(304100003, 'UAB "Kitur"', "Vilnius, Dominikonų g. 12, LT-01120", "862300"),
+        company(304100004, 'UAB "Toliau"', "Vilnius, Trakų g. 10, LT-01132", "862300"),
+    )  # Zeta in another flat of the building, Kitur next door, Toliau at the number elsewhere
+    stg_run.build_int(
+        "INSERT INTO int.companies SELECT * REPLACE (snapshot_month - INTERVAL 1 MONTH AS "
+        "snapshot_month) FROM int.companies"
+    )  # another month's companies count for that month only
+    stg_run.warehouse.run_layer(stg_run.run, "mart")
+    queue = stg_run.rows("SELECT company, building_companies FROM mart.review_queue")
+    assert queue == [('MB "Rytas"', 2)]
+
+
 KLAIPEDA = "Klaipėda, Tiltų g. 1, LT-91246"
 
 

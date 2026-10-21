@@ -162,6 +162,62 @@ def month_over_month() -> None:
     st.dataframe(changes, hide_index=True)
 
 
+def matching() -> None:
+    st.title("Matching")
+    month = month_choice()
+    st.subheader("Rules")
+    st.caption(
+        "Each rule that decided places, in the order the rules are tried: the places it decided, "
+        "its links, and its precision on the links labelled at random in "
+        "`data/labels/match_labels.csv`, with a 95% interval. Only automatic links are scored."
+    )
+    st.dataframe(
+        data.query(
+            "SELECT precision.rule, precision.tier, rules.meaning, precision.places, "
+            "precision.linked, precision.labelled, precision.correct, precision.precision, "
+            "precision.precision_low, precision.precision_high "
+            "FROM mart.match_precision AS precision JOIN int.rules AS rules USING (rule) "
+            "WHERE precision.snapshot_month = ? ORDER BY precision.rank",
+            [month],
+        ),
+        hide_index=True,
+    )
+    st.subheader("Review queue")
+    st.caption(
+        "Places whose link needs a person: a review rule decided, or a rule found several "
+        "companies. One row per candidate of the deciding rule, busiest places first, with the "
+        "companies registered in the candidate's building."
+    )
+    queue = data.query(
+        "SELECT * EXCLUDE (snapshot_month) FROM mart.review_queue WHERE snapshot_month = ? "
+        "ORDER BY review_count DESC, cid, ja_kodas",
+        [month],
+    )
+    if queue.empty:
+        st.info("No place is waiting for a person.")
+        return
+    st.dataframe(queue, hide_index=True)
+    places = dict(zip(queue["cid"], queue["place"], strict=True))  # a place repeats per candidate
+    cid = st.selectbox("Place", list(places), format_func=places.get)
+    st.markdown("**Its candidates** and the evidence each shares with it")
+    every = st.toggle("Companies meeting no rule too")
+    st.dataframe(
+        data.query(
+            "SELECT companies.name AS company, candidates.ja_kodas, companies.activity_code, "
+            "candidates.rule, candidates.same_brand, candidates.same_core, "
+            "candidates.same_building, candidates.same_street, candidates.shared_words, "
+            "candidates.fitting_activity "
+            "FROM int.candidates AS candidates JOIN int.companies AS companies "
+            "USING (snapshot_month, ja_kodas) "
+            "WHERE candidates.snapshot_month = $1 AND candidates.cid = $2 "
+            "AND (candidates.rule IS NOT NULL OR $3) "
+            "ORDER BY candidates.rule NULLS LAST, candidates.ja_kodas",
+            [month, int(cid), every],
+        ),
+        hide_index=True,
+    )
+
+
 def month_choice() -> date:
     """Return the snapshot month picked in the sidebar; stop the page without a warehouse."""
     if not data.warehouse_exists():

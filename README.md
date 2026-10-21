@@ -10,8 +10,8 @@ closer look, not accusations.
 
 **Status: app.** The system is built in stages: infrastructure, collect, load, transform,
 publish, the app. The infrastructure, collection, staging tables, the links from Google places
-to companies, the linked companies' facts and scores, the lead list and the app's leads, overview
-and month-over-month pages are built, and October 2026 is collected.
+to companies, the linked companies' facts and scores, the lead list and the app's leads, overview,
+month-over-month and matching pages are built, and October 2026 is collected.
 Each section below is updated when its part is built; the results of a real run are added at the
 end.
 
@@ -173,9 +173,10 @@ activity fits when its latest activity class in Sodra is one of the category's: 
 Each candidate carries the first rule it meets, if any, and `int.links` holds one row per place in
 scope: its company, tier and deciding rule, or `unmatched` when no candidate meets a rule.
 `mart.review_queue` lists the deciding rule's candidates of every place in review, with both
-addresses, except an IĮ's registered address; an IĮ without a trade name shows only its code. A
-link by brand and activity whose brand another company also uses is reported, since the brand
-alone may not tell which of them runs the place.
+addresses, except an IĮ's registered address, and the number of companies registered in the
+candidate's building (in October, rule 5 decides in buildings of 1 to 80, median 8); an IĮ
+without a trade name shows only its code. A link by brand and activity whose brand another
+company also uses is reported, since the brand alone may not tell which of them runs the place.
 
 | October, places in scope | Automatic | Review | Rejected | Unmatched |
 |---|---|---|---|---|
@@ -319,14 +320,16 @@ tab or a carriage return) is quoted in the file, since anyone can name a place o
   judged, with the flagged share; the sensitivity grid, the scoring's own limits marked.
 - **Month over month:** the changes since the month built before, counted and listed with their
   causes; unchanged companies on request.
-- **Matching:** precision per rule and the review queue.
+- **Matching:** each rule's places, links and precision with its interval; the review queue,
+  each candidate with the companies registered in its building; a chosen place's candidates with
+  the evidence each shares, those meeting no rule on request.
 - **Runs and checks:** each build and its check results.
 - **SQL console:** the analyst's own questions on a read-only connection, with saved queries.
 
-The leads, overview and month-over-month pages are built. The app reads the published warehouse
-only: each query opens its own read-only connection, with no access to other files, two threads
-and 1 GB of memory, and is cached until a rebuild replaces the file, which it can do while the app
-runs. It sends Streamlit no usage statistics (`.streamlit/config.toml`).
+The leads, overview, month-over-month and matching pages are built. The app reads the published
+warehouse only: each query opens its own read-only connection, with no access to other files, two
+threads and 1 GB of memory, and is cached until a rebuild replaces the file, which it can do while
+the app runs. It sends Streamlit no usage statistics (`.streamlit/config.toml`).
 
 ## Run it
 

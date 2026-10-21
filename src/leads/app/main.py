@@ -10,5 +10,6 @@ st.navigation(
         st.Page(views.leads, title="Leads"),
         st.Page(views.overview, title="Overview"),
         st.Page(views.month_over_month, title="Month over month"),
+        st.Page(views.matching, title="Matching"),
     ]
 ).run()

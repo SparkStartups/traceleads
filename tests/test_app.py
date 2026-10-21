@@ -225,3 +225,55 @@ def test_the_month_over_month_page_counts_the_changes_and_lists_them(two_months)
 def test_the_month_over_month_page_says_when_no_month_came_before(flagged):
     page = run_page("month_over_month")
     assert page.info[0].value == "No month was built before this one."
+
+
+@pytest.fixture
+def in_review(built: Path) -> Path:
+    """Send Cozy to review, the only fitting company in its building beside one fitting none,
+    and Užupio kavinė, busier, by a rare word it shares with that other company."""
+    with duckdb.connect(Settings(built).warehouse_path) as con:
+        con.execute(
+            "INSERT INTO int.companies (snapshot_month, ja_kodas, name, address, legal_form, "
+            "reg_date, street_key, house_number, activity_code) "
+            "SELECT places.snapshot_month, 304100001 + rows.n, rows.company, places.address, 310, "
+            "DATE '2018-01-01', places.street_key, places.house_number, rows.activity "
+            "FROM int.places AS places, (VALUES (0, 'UAB \"Zeta\"', '862300'), "
+            "(1, 'MB \"Rytas\"', '561100')) AS rows(n, company, activity) "
+            "WHERE places.name = 'Cozy';"
+            "INSERT INTO int.candidates SELECT snapshot_month, cid, 304100001 + n, false, false, "
+            "true, true, [], n = 1, CASE WHEN n = 1 THEN 'only_fitting_in_building' END "
+            "FROM int.places, range(2) AS t(n) WHERE name = 'Cozy';"
+            "INSERT INTO int.candidates SELECT snapshot_month, cid, 304100001, false, false, "
+            "false, true, ['zeta'], false, 'rare_word_on_street' "
+            "FROM int.places WHERE name = 'Užupio kavinė';"
+            "UPDATE int.links SET ja_kodas = 304100002, tier = 'review', "
+            "rule = 'only_fitting_in_building', "
+            "candidates = 1 WHERE cid = (SELECT cid FROM int.places WHERE name = 'Cozy');"
+            "UPDATE int.links SET ja_kodas = 304100001, tier = 'review', "
+            "rule = 'rare_word_on_street', candidates = 1 "
+            "WHERE cid = (SELECT cid FROM int.places WHERE name = 'Užupio kavinė');"
+        )
+    return built
+
+
+def test_the_matching_page_shows_each_rule_and_the_review_queue_with_its_candidates(in_review):
+    page = run_page("matching")
+    rules, queue, candidates = (frame.value for frame in page.dataframe)
+    assert rules[["rule", "places", "linked"]].values.tolist() == [
+        ["rare_word_on_street", 1, 1],  # in the order the rules are tried
+        ["only_fitting_in_building", 1, 1],
+    ]
+    assert queue[["place", "company", "building_companies"]].values.tolist() == [
+        ["Užupio kavinė", 'UAB "Zeta"', 2],  # busiest first
+        ["Cozy", 'MB "Rytas"', 2],
+    ]
+    assert candidates["company"].tolist() == ['UAB "Zeta"']  # the busiest place's
+    next(box for box in page.selectbox if box.label == "Place").select(queue["cid"][1]).run()
+    assert page.dataframe[2].value["company"].tolist() == ['MB "Rytas"']  # meeting a rule only
+    page.toggle[0].set_value(True).run()
+    assert page.dataframe[2].value["company"].tolist() == ['MB "Rytas"', 'UAB "Zeta"']
+
+
+def test_the_matching_page_says_when_no_place_waits_for_a_person(built):
+    page = run_page("matching")
+    assert page.info[0].value == "No place is waiting for a person."
