@@ -10,8 +10,8 @@ closer look, not accusations.
 
 **Status: app.** The system is built in stages: infrastructure, collect, load, transform,
 publish, the app. The infrastructure, collection, staging tables, the links from Google places
-to companies, the linked companies' facts and scores, the lead list and the app's leads, overview,
-month-over-month and matching pages are built, and October 2026 is collected.
+to companies, the linked companies' facts and scores, the lead list and the app are built, and
+October 2026 is collected.
 Each section below is updated when its part is built; the results of a real run are added at the
 end.
 
@@ -323,13 +323,17 @@ tab or a carriage return) is quoted in the file, since anyone can name a place o
 - **Matching:** each rule's places, links and precision with its interval; the review queue,
   each candidate with the companies registered in its building; a chosen place's candidates with
   the evidence each shares, those meeting no rule on request.
-- **Runs and checks:** each build and its check results.
-- **SQL console:** the analyst's own questions on a read-only connection, with saved queries.
+- **Runs and checks:** the published build's run of each month; the month's checks, with the
+  first rows behind a failing one; and each source's raw files, rows, period and download.
+- **SQL console:** the analyst's own DuckDB SQL on a read-only connection, or a saved query from
+  `sql/analyst/` (each file's first line, a comment, is its title). Each query runs in a process
+  of its own and stops after a minute, so neither a crash in DuckDB nor a query that never ends
+  takes the app down. It reads the tables as built, with an IĮ's registered address.
 
-The leads, overview, month-over-month and matching pages are built. The app reads the published
-warehouse only: each query opens its own read-only connection, with no access to other files, two
-threads and 1 GB of memory, and is cached until a rebuild replaces the file, which it can do while
-the app runs. It sends Streamlit no usage statistics (`.streamlit/config.toml`).
+The app reads the published warehouse only: each query opens its own read-only connection, with
+no access to other files, two threads and 1 GB of memory. The pages' queries are cached until a
+rebuild replaces the file, which it can do while the app runs. It sends Streamlit no usage statistics
+(`.streamlit/config.toml`).
 
 ## Run it
 

@@ -6,10 +6,11 @@ import pytest
 from streamlit.testing.v1 import AppTest
 from typer.testing import CliRunner
 
-from leads.app import data
+from leads.app import data, sandbox
 from leads.cli import app as cli
 from leads.config import Settings
 
+REPO = Path(__file__).resolve().parents[1]
 OCTOBER = date(2026, 10, 1)
 CODE = 304100001  # a company made to run the fixture place Cozy
 MONTH = f"DATE '{OCTOBER}'"
@@ -142,7 +143,7 @@ def test_queries_see_a_rebuild_at_the_same_path(built):
 
 
 def test_queries_return_at_most_row_limit_rows(built, monkeypatch):
-    monkeypatch.setattr(data, "ROW_LIMIT", 1)
+    monkeypatch.setattr(sandbox, "ROW_LIMIT", 1)
     assert len(data.query("SELECT * FROM range(2)")) == 1
 
 
@@ -163,9 +164,10 @@ def test_queries_run_on_two_threads_and_1_gb(built):
     ],
     ids=["write", "read-a-file", "raise-a-limit", "attach"],
 )
-def test_queries_cannot_write_read_files_or_change_settings(built, sql):
+@pytest.mark.parametrize("run", [data.query, data.console], ids=["page", "console"])
+def test_queries_cannot_write_read_files_or_change_settings(built, run, sql):
     with pytest.raises(duckdb.Error):
-        data.query(sql)
+        run(sql)
 
 
 @pytest.fixture
@@ -277,3 +279,102 @@ def test_the_matching_page_shows_each_rule_and_the_review_queue_with_its_candida
 def test_the_matching_page_says_when_no_place_waits_for_a_person(built):
     page = run_page("matching")
     assert page.info[0].value == "No place is waiting for a person."
+
+
+def test_the_runs_page_shows_each_run_and_the_month_s_checks_and_snapshot(project_root, collected):
+    for month in (date(2026, 9, 1), OCTOBER):
+        collected(month)
+    assert CliRunner().invoke(cli, ["build"]).exit_code == 0
+    page = run_page("runs")
+    assert page.sidebar.selectbox[0].value == OCTOBER  # the latest month first
+    runs, checks, failing, snapshot = (frame.value for frame in page.dataframe)
+    assert runs[["snapshot_month", "git_sha"]].values.tolist() == [
+        [OCTOBER, "test"],
+        [date(2026, 9, 1), "test"],
+    ]
+    assert (runs["seconds"] > 0).all()
+    assert "sample" not in checks.columns  # shown as rows below
+    google = checks.set_index("check_name").loc["stg_google_queries"]
+    assert (google["severity"], google["failing_rows"]) == ("warn", 84)  # 83 empty, 1 full
+    assert len(failing) == 5  # the first rows the check kept
+    assert "file" in failing.columns
+    assert snapshot["source"].tolist() == ["google_maps", "jar", "sodra", "vmi_taxes"]
+    assert snapshot.set_index("source").loc["google_maps", ["files", "rows"]].tolist() == [84, 20]
+
+
+def test_the_console_runs_a_saved_query(built):
+    page = run_page("sql_console")
+    assert page.selectbox[0].options == [
+        "(your own)",
+        "Flagged companies' places on Google and the evidence that linked each",
+        "Raw files behind each month, with URL, SHA-256 and download time",
+    ]
+    page.selectbox[0].select("Raw files behind each month, with URL, SHA-256 and download time")
+    page.run()
+    assert page.text_area[0].value.startswith("-- Raw files behind each month")
+    page.button[0].click().run()
+    assert set(page.dataframe[1].value["source"]) == {"jar", "sodra", "vmi_taxes"}
+    assert page.caption[-1].value == "3 rows"
+
+
+def test_the_console_runs_nothing_for_an_empty_query(built):
+    page = run_page("sql_console")
+    page.button[0].click().run()
+    assert len(page.dataframe) == 1  # the tables and views only
+
+
+@pytest.mark.parametrize(
+    "path", sorted((REPO / "sql" / "analyst").glob("*.sql")), ids=lambda path: path.stem
+)
+def test_every_saved_query_runs_on_a_built_warehouse(built, path):
+    data.console(path.read_text(encoding="utf-8"))
+
+
+def test_the_console_shows_an_error_instead_of_writing(built):
+    page = run_page("sql_console")
+    page.text_area[0].input("CREATE TABLE mart.mine AS SELECT 1").run()
+    page.button[0].click().run()
+    assert "read-only" in page.error[0].value
+
+
+def test_the_console_says_how_to_build_a_missing_warehouse(project_root):
+    page = run_page("sql_console")
+    assert "No published warehouse yet" in page.info[0].value
+    assert not page.exception
+
+
+def test_queries_spill_no_temporary_files(built):
+    assert data.query("SELECT current_setting('temp_directory') AS d")["d"].tolist() == [""]
+
+
+def test_the_console_returns_at_most_row_limit_rows(built):
+    assert len(data.console(f"FROM range({sandbox.ROW_LIMIT + 1})")) == sandbox.ROW_LIMIT
+
+
+def test_the_console_returns_an_empty_frame_for_a_statement_without_rows(built):
+    assert data.console("BEGIN").empty
+
+
+def test_the_console_outlives_a_statement_that_crashes_duckdb(built):
+    # DuckDB 1.5.6 stops its process on closing a connection whose file logging it may not write
+    with pytest.raises(duckdb.Error, match="file system operations are disabled"):
+        data.console("CALL enable_logging(storage='file', storage_path='logs')")
+    assert data.console("SELECT 1 AS one")["one"].tolist() == [1]
+
+
+def test_the_console_keeps_duckdb_s_own_output_out_of_its_rows(built):
+    rows = data.console("CALL enable_logging(storage='stdout'); SELECT 1 AS one")
+    assert rows["one"].tolist() == [1]
+
+
+def test_the_console_types_its_rows_as_the_pages_queries_are(built):
+    sql = "SELECT 1.5::DECIMAL(14, 2) AS tax, NULL::INTEGER AS rank, DATE '2026-10-01' AS month"
+    assert data.console(sql).dtypes.equals(data.query(sql).dtypes)
+
+
+def test_the_console_stops_a_query_after_console_seconds(built, monkeypatch):
+    monkeypatch.setattr(data, "CONSOLE_SECONDS", 5)
+    page = run_page("sql_console")
+    page.text_area[0].input("SELECT count(*) FROM range(10_000_000_000_000)").run()
+    page.button[0].click().run()
+    assert page.error[0].value == "The query was stopped after 5 seconds."

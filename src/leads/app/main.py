@@ -11,5 +11,7 @@ st.navigation(
         st.Page(views.overview, title="Overview"),
         st.Page(views.month_over_month, title="Month over month"),
         st.Page(views.matching, title="Matching"),
+        st.Page(views.runs, title="Runs and checks"),
+        st.Page(views.sql_console, title="SQL console"),
     ]
 ).run()

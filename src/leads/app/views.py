@@ -1,11 +1,16 @@
 """The app's pages, one function each, reading the published warehouse through ``data``."""
 
+import json
 from datetime import date
 
+import duckdb
+import pandas as pd
 import streamlit as st
 
-from leads.app import data
-from leads.config import MONTH_FORMAT
+from leads.app import data, sandbox
+from leads.config import MONTH_FORMAT, Settings
+
+OWN_QUERY = "(your own)"
 
 
 def leads() -> None:
@@ -218,11 +223,91 @@ def matching() -> None:
     )
 
 
-def month_choice() -> date:
-    """Return the snapshot month picked in the sidebar; stop the page without a warehouse."""
+def runs() -> None:
+    st.title("Runs and checks")
+    month = month_choice()
+    st.caption(
+        "The published build's run of each snapshot month. Its data-quality checks follow: an "
+        "error stops the build, a warning is only recorded, and a failing check keeps its first "
+        "rows."
+    )
+    st.dataframe(
+        data.query(
+            "SELECT run_id, snapshot_month, git_sha, started_at, "
+            "round(epoch(finished_at - started_at), 1) AS seconds "
+            "FROM meta.pipeline_runs ORDER BY snapshot_month DESC"
+        ),
+        hide_index=True,
+    )
+    st.subheader("Checks")
+    checks = data.query(
+        "SELECT checks.layer, checks.check_name, checks.severity, checks.failing_rows, "
+        "checks.sample FROM meta.dq_results AS checks JOIN meta.pipeline_runs AS runs "
+        "USING (run_id) WHERE runs.snapshot_month = ? ORDER BY checks.layer, checks.check_name",
+        [month],
+    )
+    st.dataframe(checks.drop(columns="sample"), hide_index=True)
+    failing = checks[checks["failing_rows"] > 0].set_index("check_name")
+    if not failing.empty:
+        name = st.selectbox("Rows behind a failing check", failing.index)
+        st.dataframe(pd.DataFrame(json.loads(failing.loc[name, "sample"])), hide_index=True)
+    st.subheader("Snapshot")
+    st.caption(
+        "Each source of the month: the raw files it came from, the rows it gave the snapshot, "
+        "its latest period and its download."
+    )
+    st.dataframe(
+        data.query(
+            "SELECT source, count(*) AS files, any_value(snapshot_rows) AS rows, "
+            "any_value(period) AS period, max(fetched_at) AS fetched_at "
+            "FROM stg.source_files WHERE snapshot_month = ? GROUP BY source ORDER BY source",
+            [month],
+        ),
+        hide_index=True,
+    )
+
+
+def sql_console() -> None:
+    st.title("SQL console")
+    require_warehouse()
+    st.caption(
+        "DuckDB SQL over the published warehouse, read-only: no other file, database or setting "
+        f"can be reached. Results show at most {sandbox.ROW_LIMIT:,} rows, and a query stops after "
+        f"{data.CONSOLE_SECONDS} seconds. Tables read as built: an IĮ's registered address, "
+        "which the lead list and the review queue withhold, shows here."
+    )
+    with st.expander("Tables and views"):
+        st.dataframe(
+            data.query(
+                "SELECT table_schema, table_name, table_type FROM information_schema.tables "
+                "ORDER BY table_schema, table_name"
+            ),
+            hide_index=True,
+        )
+    saved = data.saved_queries(Settings().sql_dir / "analyst")
+    choice = st.selectbox("Saved query", [OWN_QUERY, *saved])
+    sql = st.text_area("Query", value=saved.get(choice, ""), height=200, key=f"sql:{choice}")
+    if not st.button("Run", type="primary") or not sql.strip():
+        return
+    try:
+        result = data.console(sql)
+    except duckdb.Error as exc:
+        st.error(str(exc))
+        return
+    st.dataframe(result, hide_index=True)
+    st.caption(f"{len(result):,} rows")
+
+
+def require_warehouse() -> None:
+    """Stop the page with a hint when no warehouse has been published yet."""
     if not data.warehouse_exists():
         st.info("No published warehouse yet: build one with `make build` or `docker compose up`.")
         st.stop()
+
+
+def month_choice() -> date:
+    """Return the snapshot month picked in the sidebar; stop the page without a warehouse."""
+    require_warehouse()
     months = data.query("SELECT snapshot_month FROM meta.pipeline_runs ORDER BY 1 DESC")
     return st.sidebar.selectbox(
         "Snapshot month", months["snapshot_month"], format_func=lambda m: f"{m:{MONTH_FORMAT}}"
