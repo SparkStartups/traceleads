@@ -1,43 +1,68 @@
 # Decisions
 
-> One trade-off runs through every choice here: **precision over recall**. Flagging an honest
-> business costs the analyst an inspection and the business its good name; missing a lead only
-> costs coverage.
+One rule is behind all of these: **precision over recall**. Flagging an honest business costs it
+an inspection and its good name. Missing a lead only costs coverage.
 
-## Nine calls, and what lost
+## 1. Google through Oxylabs, not the Places API
 
-| | Question | The call | Rejected |
-|---|---|---|---|
-| **1** | Where do "busy" and "declared" come from? | Google Maps search pages, rendered by the Oxylabs Web API and parsed in Python; the Register of Legal Entities (name, address, legal form, age), Sodra (insured people per month, activity class) and VMI taxes paid per year, all downloaded by the collector. | The Google Places API, whose terms restrict storing results, which monthly snapshots need; financial statements, a year late; downloading Sodra by hand, which a monthly job cannot do. |
-| **2** | Which businesses? | Cafés and bakeries, car repair, dental clinics: enough Vilnius companies for peer groups, a distinct activity class, a clear Google category, customers who pay on the spot. | Hair and beauty, where self-employed people renting chairs outnumber companies; bars and vets, with too few peers. |
-| **3** | How is a month kept? | `collect` (online) freezes each source into a Parquet snapshot with a manifest of its raw files; `build` (offline) rebuilds every month into one DuckDB file through SQL models `stg → int → mart`, checks after each layer, and publishes only if no blocking check fails. No migrations, every month scored by the same code, the list reproduced byte for byte. | PostgreSQL and dbt, a server and a framework for one analyst's twenty-odd models; appending each month to the published file, which a changed table breaks. |
-| **4** | Where do categories and thresholds live? | Once, in `config.py`, written into `ref` tables that the SQL reads. | Constants in both the collector and the SQL, which drift apart. |
-| **5** | Which company runs a listing? | A listing has no company code, so an ordered cascade of five rules decides. Three link automatically: the same brand in the same building; the same brand with a fitting activity class; the same name without generic words in the same building. Two only queue the place for a person: a rare shared word on the same street; the only fitting company in the building. An address alone never links automatically, since most Vilnius companies share buildings. A link labelled wrong is never scored. | Name similarity such as Jaro-Winkler, which rates "Antakalnio servisas" and "Antakalnio juvelyrika" as close, since district names start many business names; a weighted score, with too few labels to fit it. |
-| **6** | What is busy, and what is quiet? | Busy: lifetime reviews at or above the category's median and at least 50. Quiet, twice: staff (average insured over Sodra's latest three months) and the last full year's tax, each at most a third of the peers' median. Peers: single-place companies of the same category and legal-form group, not closed, young or without a tax record, within the review tercile when it holds enough. Both gaps make a `lead`; one puts a company on `watch`, unless its other figure is above the median. Ordered by the euro gap to the peers' tax, never called evaded tax. | A reviews-per-employee norm, blind to how categories differ; a trained model, with no confirmed cases to fit it; average wage, which Sodra hides for employers with one to three insured. |
-| **7** | What if a figure is missing? | Hold the company, with the reason shown: every place closed, registered after January of the tax year (a partial year of tax), too few peers, or no VMI row. A missing Sodra row is zero, since Sodra lists every employer. Every company shows the innocent explanations its data allows. | Reading a missing VMI row as zero tax, which would flag the real payers VMI leaves out. |
-| **8** | What about owners' names? | An IĮ, one person's business, keeps only the trade name in quotes, dropped too when it holds the owner's name; its registered address, often a home, stays out of the list and the queue (the snapshot keeps the register's, as published). | Keeping full names in the snapshot and hiding them in the app, which would still commit them. |
-| **9** | How does the analyst ask questions? | A local Streamlit app over the read-only warehouse: leads with their evidence, overview, month over month, matching, runs and checks, and a read-only SQL console, so no question needs a rerun. | A BI server or a hosted dashboard, more moving parts for one analyst. |
+The Places API's terms limit storing results, and this whole thing is built on monthly snapshots
+we keep. So Oxylabs renders the normal Google Maps search page and we parse it. Staff and tax come
+from open registers (JAR, Sodra, VMI), all downloaded by code.
 
-## What was cut
+## 2. Three kinds of business
 
-Other Google signals (ratings, opening hours, reviews over time); more evidence per link
-(company-first searches, food-safety and cash-register premises, company codes on websites);
-scheduling and alerting, since the analyst runs `collect` and `build`. The README's roadmap lists
-what comes next.
+We picked cafés and bakeries, car repair, and dental clinics. Each has enough Vilnius companies to
+compare, a clear activity class and Google category, and customers who pay on the spot. Hair and
+beauty was left out because it's mostly self-employed people renting chairs, who aren't companies.
+Bars and vets were left out because there are too few to compare.
 
-## Known limitations
+## 3. Collect once a month, keep everything
 
-Where the list can be wrong is measured in the README; these are limits of the data:
+The sources mostly show only today. The register and VMI publish their current state, and
+Google's results change every day. If October isn't saved in October, it's gone.
 
-- **One month, once.** Only the current month can be collected, since the sources publish their
-  current state: a month missed is a gap for good. Month-over-month starts after October.
-- **Sodra in early March.** A new year's file is asked for as soon as its January can be
-  published, so an early-March `collect` fails until Sodra publishes January and it is rerun.
-- **Tax lags reviews.** Tax is the last full year's: October 2026 sets 2025's taxes against today's
-  reviews.
-- **Sole traders are invisible.** They are not companies in these registers.
-- **Nameless IĮ.** Two thirds of IĮ payers keep no trade name (5,561 of 8,270 in October), so only
-  the building rule, which sends a place to review, can find them; the owner-name rule also drops
-  the odd abbreviation with dots.
-- **Timestamps matter.** A raw file's modification time is its download time, so a copy of
-  `data/raw/` without timestamps rebuilds a snapshot that differs from the committed one.
+So `collect` does all the downloading in one go and saves two things: the raw files exactly as
+downloaded, and a small snapshot with only the columns we use (about 1.5 million rows, 12 MB of
+Parquet, small enough for git). Everything after that works from the snapshot, offline. This
+pays off in a few ways:
+
+- Anyone can rebuild October with `docker compose up`: no API key, no network, no cost.
+- Google pages cost money, so each one is rendered once, not on every build.
+- Every raw file's SHA-256 is recorded, so any lead can be traced back to the exact file.
+- An individual enterprise (IĮ) is often named after its owner. Those names are dropped when
+  the snapshot is written, so they never reach git (raw files stay on the local disk only).
+
+## 4. Transform in DuckDB, with plain SQL
+
+A month is small: 840,000 Sodra rows, 390,000 VMI rows, 235,000 companies and about 1,000 Google
+listings. The work is joins, text matching and comparing medians, which is what SQL is good at.
+
+- **DuckDB** is a database in one file, with no server. It reads the Parquet snapshots directly
+  and rebuilds October in about 5 seconds. The result is one file the app can open.
+- **PostgreSQL** would need a server running next to the app, a schema to migrate and a step to
+  load the files. That's a lot of setup for one analyst.
+- **Polars** is just as fast, but it's a Python dataframe library. The logic would be Python
+  code, and there'd be no database file for the app and its SQL console to share. In SQL, the
+  analyst can read the models and ask their own questions in the same language.
+
+Every build starts from zero and writes a new file, so there are no migrations and the same
+snapshot always gives the same list.
+
+**Matching.** Google doesn't say which company runs a place, so we compare names and addresses.
+A café called "Kavos namai" on Gedimino pr. 1 and UAB "Kavos namai" registered at Gedimino pr. 1
+is a safe match. Five rules go from safest to weakest, and the first one that fits wins. Only the
+three safest link on their own; the other two put the place in a queue for a person to decide.
+
+**Scoring.** A company is compared with similar ones: the same kind of business, one place each.
+A lead is busy on Google, yet has both far fewer staff and far less tax than its peers (a third
+of their median or less). One gap only puts it on watch. When data is missing, such as no tax
+record or too few peers, the company is held with the reason shown instead of guessed. There's
+no machine learning model: there are no confirmed cases to learn from yet, and an analyst needs a
+reason they can read out loud.
+
+## 5. Show it in Streamlit
+
+The analyst needs to see the list, check the evidence behind each lead, and ask their own
+questions. Streamlit is a Python library, so the app lives in the same repo, starts with the
+same `docker compose up`, and reads the DuckDB file directly, read-only. When a new build
+finishes, the app shows the new data without a restart.
