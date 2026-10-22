@@ -12,15 +12,17 @@ import duckdb
 
 from leads.collect.fetch import Fetcher, FetchError
 from leads.collect.source import RawFile, Source
+from leads.config import SCORING
 
 FILE_NAME = "monthly-{year}.csv.zip"
 URL = "https://atvira.sodra.lt/imones/downloads/{year}/" + FILE_NAME
 ZIP_SIGNATURE = b"PK\x03\x04"
 COLUMNS = ("jarCode", "month", "numInsured", "ecoActCode")
 # Sodra publishes a month about four weeks after it ends, so its latest month is two months
-# before the snapshot month, or three if a release is late; its latest three months then lie
-# between five and two months before.
-FIRST_MONTH_BACK, LAST_MONTH_BACK = 5, 2
+# before the snapshot month, or three if a release is late; the months staff averages over then
+# lie between LAST_MONTH_BACK and FIRST_MONTH_BACK months before.
+LAST_MONTH_BACK = 2
+FIRST_MONTH_BACK = LAST_MONTH_BACK + SCORING.staff_months
 
 _HEADER_CODE = re.compile(r"\((\w+)\)\s*$")
 
@@ -30,7 +32,7 @@ class Sodra(Source):
     period_column = "month"
 
     def fetch(self, fetcher: Fetcher, raw_dir: Path, month: date) -> list[RawFile]:
-        """Return the files of the years that hold Sodra's latest three months.
+        """Return the files of the years that hold the months staff averages over.
 
         A new year's file is asked for only once its January can be published.
         """
