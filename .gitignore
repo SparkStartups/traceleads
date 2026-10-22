@@ -3,3 +3,5 @@ __pycache__/
 /data/raw/
 .env
 *.partial
+/data/snapshots/*.building/
+/data/snapshots/*.replaced/
