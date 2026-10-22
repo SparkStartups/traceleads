@@ -29,26 +29,49 @@ YEARS = 3  # this year to date and the two before, so a closed year exists even 
 # An individual enterprise (IĮ) is named after its owner, and so is its trade name at times
 # ("V. Petraičio įmonė", "Onos Petraitienės kavinė"). The snapshot keeps only the last quoted part
 # of a name, the trade name even when quotes are nested (IĮ "A. Petraičio firma "Ratai"), and
-# drops it when it holds an owner's name: an initial and a name, or a first name and a surname
-# in the genitive, told by their endings. In capitals only the endings no common word has count.
+# drops it when it holds an owner's name: an initial and a name, or a first name and a surname,
+# told by their endings. In the genitive most endings are a name's; in the nominative only a
+# surname's own suffixes are, since "Raudonas Dviratis" reads like "Jonas Petrauskas". In capitals
+# only the endings no common word has count.
 # DuckDB runs the patterns: its regular expressions know \p{Lu}, Python's re does not.
 LAST_QUOTED = r'[„"“]([^„"“”]+)[“"”][^„"“”]*$'
 FIRST_NAME_ENDINGS = ("o", "os", "ės", "aus", "io", "ių", "iaus")
 SURNAME_ENDINGS = ("ės", "os", "io", "iaus", "ausko", "insko", "cko", "ovo", "evo", "ūno", "ėno")
 SURNAME_ENDINGS_IN_CAPITALS = ("ienės", "aitės", "ytės", "ūtės", "aičio", "avičiaus", "evičiaus")
+NOMINATIVE_FIRST_NAME_ENDINGS = ("as", "is", "us", "ys", "a", "ė")
+NOMINATIVE_SURNAME_ENDINGS = (
+    "ienė",
+    "aitė",
+    "ytė",
+    "ūtė",
+    "utė",
+    "aitis",
+    "ėnas",
+    "onis",
+    "ūnas",
+    "auskas",
+    "vičius",
+    "inskas",
+    "ckas",
+)
 
 
-def _one_of(endings: tuple[str, ...]) -> str:
-    return f"({'|'.join(endings)})"
+def _full_name(first: tuple[str, ...], surname: tuple[str, ...], *, capitals: bool = False) -> str:
+    word = r"\p{Lu}+" if capitals else r"\p{Lu}\p{Ll}+"
+    first, surname = (
+        tuple(ending.upper() for ending in endings) if capitals else endings
+        for endings in (first, surname)
+    )
+    return rf"(^|\s){word}({'|'.join(first)})\s+{word}({'|'.join(surname)})(\s|$|[,.])"
 
 
 OWNER_NAME = "|".join(
     (
         r"(^|[\s.])\p{Lu}\.\s?\p{L}{2,}",
-        rf"(^|\s)\p{{Lu}}\p{{Ll}}+{_one_of(FIRST_NAME_ENDINGS)}\s+"
-        rf"\p{{Lu}}\p{{Ll}}+{_one_of(SURNAME_ENDINGS)}(\s|$|[,.])",
-        rf"(^|\s)\p{{Lu}}+{_one_of(FIRST_NAME_ENDINGS).upper()}\s+"
-        rf"\p{{Lu}}+{_one_of(SURNAME_ENDINGS_IN_CAPITALS).upper()}(\s|$|[,.])",
+        _full_name(FIRST_NAME_ENDINGS, SURNAME_ENDINGS),
+        _full_name(FIRST_NAME_ENDINGS, SURNAME_ENDINGS_IN_CAPITALS, capitals=True),
+        _full_name(NOMINATIVE_FIRST_NAME_ENDINGS, NOMINATIVE_SURNAME_ENDINGS),
+        _full_name(NOMINATIVE_FIRST_NAME_ENDINGS, NOMINATIVE_SURNAME_ENDINGS, capitals=True),
     )
 )
 

@@ -201,6 +201,21 @@ def test_vmi_taxes_snapshot_keeps_only_trade_names(settings, month):
         ('IĮ "RASOS ONAITĖS ĮMONĖ"', None),
         ('IĮ "JONO PETRAIČIO ĮMONĖ"', None),
         ('IĮ "ONOS PETRAITIENĖS KIRPYKLA"', None),
+        ('IĮ "Jonas Petrauskas"', None),
+        ('IĮ "Ona Onaitytė"', None),
+        ('IĮ "RASA PETRAITIENĖ"', None),
+        ('IĮ "Eglė Jonaitė"', None),
+        ('IĮ "Rasa Petrūtė"', None),
+        ('IĮ "Ona Bernotutė"', None),
+        ('IĮ "Kęstutis Petraitis"', None),
+        ('IĮ "Kazys Jonėnas"', None),
+        ('IĮ "Matas Petronis"', None),
+        ('IĮ "Linas Jonūnas"', None),
+        ('IĮ "Andrius Petrevičius"', None),
+        ('IĮ "Tomas Jonickas"', None),
+        ('IĮ "Petras Jonaitinskas"', None),
+        ('IĮ "Gera Duonaitėlė"', "Gera Duonaitėlė"),  # a surname's suffix inside a longer word
+        ('IĮ "Raudonas Dviratis"', "Raudonas Dviratis"),  # nominative, no surname's suffix
         ('IĮ "MANO GĖLĖS"', "MANO GĖLĖS"),  # in capitals, common endings are not a name
         ('IĮ "Senamiesčio kepykla"', "Senamiesčio kepykla"),
     ],
