@@ -191,6 +191,7 @@ def test_a_place_found_under_two_categories_takes_the_one_that_allows_it(stg_run
 def test_int_checks_pass_on_the_fixture_month(stg_run):
     stg_run.build_int()
     assert stg_run.run_checks("int") == {
+        "int_companies_in_city": ("error", 0),
         "int_labels_current": ("warn", 0),
         "int_place_addresses": ("warn", 0),
         "int_places_in_scope": ("error", 0),
@@ -213,6 +214,13 @@ def test_a_place_in_scope_without_a_house_number_is_reported(stg_run, place, rep
         ("INSERT INTO int.companies SELECT * FROM int.companies LIMIT 1", "int_unique_keys"),
         ("INSERT INTO int.places SELECT * FROM int.places LIMIT 1", "int_unique_keys"),
         ("UPDATE int.places SET scope = 'other_activity'", "int_places_in_scope"),
+        (  # last month's companies keep their keys, this month's have none
+            "INSERT INTO int.companies SELECT * REPLACE "
+            "((snapshot_month - INTERVAL 1 MONTH)::DATE AS snapshot_month) FROM int.companies; "
+            "UPDATE int.companies SET street_key = NULL "
+            "WHERE snapshot_month = getvariable('snapshot_month')",
+            "int_companies_in_city",
+        ),
     ],
 )
 def test_int_checks_stop_the_build(stg_run, breakage, check):

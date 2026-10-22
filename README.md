@@ -208,8 +208,8 @@ A place is `in_scope` inside the city's bounds with a Google category of the cat
 it, else `outside_city` (a search by eldership also finds Kaunas' Verkiai) or `other_activity` (a
 café search also finds restaurants, and places that show no Google category). In October, 516
 of 745 places are in scope: 162 cafés and bakeries, 191 car repair shops and 163 dental clinics.
-The checks stop the build when a key repeats or no place is in scope, and report places in scope
-without a street or house number.
+The checks stop the build when a key repeats, no place is in scope or no company has a street in
+the city, and report places in scope without a street or house number.
 
 </details>
 
@@ -412,7 +412,7 @@ The cost of flagging an honest business shapes each step:
 - **Both figures, and peers.** A lead needs a staff gap and a tax gap against at least 5 similar
   companies; one gap only puts a company on watch. 8 companies are held, with the reason shown,
   rather than judged on missing data.
-- **Data-quality checks** run after every layer: 15 in October's build. The 11 that block a build
+- **Data-quality checks** run after every layer: 16 in October's build. The 12 that block a build
   all pass; of the 4 warnings, two report rows: 35 results lists that came back empty (7) or full
   (28, so they may have left places out), and 24 places in scope without a street or house number.
 - **Sensitivity:** both leads stay leads at a gap of a half or a third with any minimum of reviews.
