@@ -113,15 +113,16 @@ only the saved snapshot. Google Maps pages are rendered by the Oxylabs Web API, 
 from each place only the fields above are kept, with no review text and nothing about reviewers.
 
 > [!NOTE]
-> Individual enterprises (IĮ) are one person's business, and their names are often the owner's
-> name. The register already hides them. From VMI the snapshot keeps only the last quoted part of
-> a payer's name, the trade name, and drops it when it holds an owner's name: an initial and a
-> name ("V. Petraičio įmonė"), or a first name and a surname in the genitive ("Onos Petraitienės
-> kavinė"). In October 2026, of 8,270 IĮ payers, 5,422 have no quoted part and keep no name, 137
-> lose theirs as an owner's name and 2,711 keep a trade name. An IĮ without one is never linked to
-> a place automatically: only the building rule, which sends a place to review, can find it. The
-> published list and the review queue leave out an IĮ's registered address, often its owner's
-> home.
+> Individual enterprises (IĮ) are one person's business, and their names are often the owner's name.
+> The register already hides them. From VMI the snapshot keeps only the last quoted part of a
+> payer's name, the trade name, and drops it when it holds an owner's name: an initial and a name
+> ("V. Petraičio įmonė"), or a first name and a surname, in the genitive ("Onos Petraitienės
+> kavinė") or in the nominative with a surname's own suffix ("Jonas Petrauskas"). In October 2026,
+> of 8,270 IĮ payers, 5,422 have no quoted part and keep no name, 139 lose theirs as an owner's name
+> and 2,709 keep a trade name. An IĮ without one is never linked to a place automatically: only the
+> building rule, which sends a place to review, can find it. The published list and the review queue
+> leave out an IĮ's registered address, often its owner's home; the snapshot keeps the register's
+> addresses as the register publishes them.
 
 <details>
 <summary><b>Collecting a month, in detail</b></summary>
