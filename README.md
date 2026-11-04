@@ -56,22 +56,146 @@ record, its staff month by month, its tax, and the raw files all of it came from
 ## How it works
 
 ```mermaid
-flowchart LR
-    S["Register · Sodra · VMI<br/>Google Maps via Oxylabs"] -->|collect| P[("monthly snapshot<br/>Parquet")]
-    P -->|build| W[("DuckDB<br/>stg → int → mart")]
-    W --> CSV["leads.csv"]
-    W --> APP["Streamlit app"]
+flowchart TB
+    subgraph SOURCES["Public sources"]
+        direction LR
+        JAR["Register (JAR)"] ~~~ SODRA["Sodra"] ~~~ VMI["VMI"] ~~~ GMAPS["Google Maps<br/>via Oxylabs"]
+    end
+
+    COLLECT(["<b>① collect</b><br/>monthly · online"])
+    RAW[("<b>data/raw</b><br/>files as downloaded<br/>local only")]
+    ANALYST(("<b>VMI analyst</b>"))
+
+    subgraph GIT["in git"]
+        SNAP[("<b>data/snapshots</b><br/>Parquet per month<br/>owners' names masked")]
+        LAB[("<b>data/labels</b><br/>match_labels.csv")]
+    end
+
+    BUILD(["<b>② build</b><br/>offline · DuckDB + SQL<br/>16 data-quality checks"])
+    WH[("<b>warehouse/leads.duckdb</b><br/>stg → int → mart<br/>replaced only if all pass")]
+    CSV["<b>output/month/leads.csv</b><br/>the lead list"]
+    APP["<b>Streamlit app</b><br/>read-only"]
+
+    SOURCES --> COLLECT
+    COLLECT --> RAW
+    COLLECT --> SNAP
+    SNAP --> BUILD
+    LAB --> BUILD
+    BUILD --> WH
+    WH --> CSV & APP
+    ANALYST -->|"③ labels a sample<br/>of links"| LAB
+    ANALYST -->|"③ reviews leads"| APP
+
+    class JAR,SODRA,VMI,GMAPS ext
+    class COLLECT,BUILD proc
+    class RAW,SNAP,LAB,WH store
+    class CSV,APP out
+    class ANALYST person
+    style SOURCES fill:none,stroke:#8c959f,stroke-dasharray:4 3
+    style GIT fill:none,stroke:#1a7f37,stroke-width:2px
+    classDef ext fill:#f6f8fa,stroke:#8c959f,stroke-dasharray:4 3,color:#24292f
+    classDef proc fill:#ddf4ff,stroke:#0969da,stroke-width:2px,color:#0a3069
+    classDef store fill:#fff8c5,stroke:#9a6700,color:#3b2300
+    classDef out fill:#dafbe1,stroke:#1a7f37,color:#04260f
+    classDef person fill:#fbefff,stroke:#8250df,stroke-width:2px,color:#3e1f79
 ```
 
-There are two steps:
-
-- `collect` downloads the month's data and saves it as a snapshot: Parquet files plus a list of
-every raw file with its SHA-256. It's the only step that uses the network.
-- `build` rebuilds a DuckDB warehouse from all snapshots with plain SQL, running 16
-data-quality checks along the way. If a blocking check fails, the new warehouse isn't published.
+- **① collect** downloads the month's sources into `data/raw`, kept locally as they came. From
+them it writes the month's snapshot: Parquet files with only the fields we use and owners' names
+masked, plus each raw file's SHA-256. It's the only step that uses the network, and only Google
+costs money.
+- **② build** rebuilds a DuckDB warehouse from what's in git, the snapshots and the labels, with
+plain SQL. It runs 16 data-quality checks along the way. If a blocking check fails, the new
+warehouse isn't published and the last good one stays.
+- **③ review**: the analyst works through the leads in the app and marks a sample of
+place-to-company links right or wrong in `data/labels/match_labels.csv`. The next build measures
+each matching rule from them and drops the links marked wrong.
 
 The same snapshot always gives the same list. A test rebuilds October and compares it byte for
 byte.
+
+Built with Python 3.12, uv and Typer. curl_cffi downloads, selectolax reads Google's pages,
+DuckDB runs the SQL, Streamlit serves the app, and Docker Compose runs the build and then the app.
+
+### Inside the warehouse
+
+`build` makes every table from zero, one month and one layer at a time, and runs a layer's checks
+before the next layer starts. The blue tables are the ones the lead list rests on.
+
+```mermaid
+flowchart TB
+    SNAP[("<b>data/snapshots</b>")]
+    LAB[("<b>data/labels</b>")]
+
+    subgraph STG[" "]
+        STGH["<b>stg</b><br/>the sources, typed<br/>7 checks"]
+        JAR["<b>jar_entities</b><br/>companies"]
+        SODRA["<b>sodra_monthly</b><br/>staff per month"]
+        VMI["<b>vmi_taxes</b><br/>tax per year"]
+        GOOGLE["<b>google_listings</b><br/>search results"]
+        LABELS["<b>match_labels</b><br/>hand labels"]
+    end
+
+    subgraph INT[" "]
+        INTH["<b>int</b><br/>places matched<br/>to companies<br/>6 checks"]
+        COMPANIES["<b>companies</b><br/>name and address keys"]
+        PLACES["<b>places</b><br/>each once, in scope or not"]
+        CANDIDATES["<b>candidates</b><br/>possible pairs,<br/>the first rule each meets"]
+        LINKS["<b>links</b><br/>each place's company,<br/>or why it has none"]
+    end
+
+    subgraph MART[" "]
+        MARTH["<b>mart</b><br/>facts, scores,<br/>the lead list<br/>3 checks"]
+        FACTS["<b>company_facts</b><br/>reviews, staff, tax<br/>per linked company"]
+        SCORES["<b>scores</b><br/>against peers: lead, watch,<br/>not flagged or held"]
+        LEADS["<b>leads → leads_export</b><br/>ranked, with reasons"]
+        SUMMARY["<b>category_summary<br/>sensitivity<br/>month_over_month</b>"]
+        MATCHQ["<b>review_queue<br/>match_precision</b>"]
+    end
+
+    CSV["<b>output/month/leads.csv</b>"]
+    APP["<b>Streamlit app</b>"]
+
+    SNAP --> JAR & SODRA & VMI & GOOGLE
+    LAB --> LABELS
+    SNAP ~~~ STGH
+    JAR ~~~ INTH
+    LINKS ~~~ MARTH
+    JAR & SODRA & VMI --> COMPANIES
+    GOOGLE --> PLACES
+    COMPANIES & PLACES --> CANDIDATES --> LINKS
+    LABELS -->|rejects wrong links| LINKS
+    LINKS -->|automatic links| FACTS
+    LINKS -->|links to review| MATCHQ
+    FACTS --> SCORES --> LEADS
+    SCORES --> SUMMARY
+    LEADS --> CSV
+    LEADS & SUMMARY & MATCHQ --> APP
+
+    class SNAP,LAB,STGH,INTH,MARTH store
+    class JAR,SODRA,VMI,GOOGLE,LABELS,COMPANIES,PLACES,CANDIDATES,FACTS,SUMMARY,MATCHQ tbl
+    class LINKS,SCORES,LEADS key
+    class CSV,APP out
+    style STG fill:none,stroke:#9a6700,stroke-width:2px
+    style INT fill:none,stroke:#9a6700,stroke-width:2px
+    style MART fill:none,stroke:#9a6700,stroke-width:2px
+    classDef store fill:#fff8c5,stroke:#9a6700,color:#3b2300
+    classDef tbl fill:#ffffff,stroke:#57606a,color:#24292f
+    classDef key fill:#ffffff,stroke:#0969da,stroke-width:2px,color:#0a3069
+    classDef out fill:#dafbe1,stroke:#1a7f37,color:#04260f
+```
+
+The checks are plain SQL in `sql/dq`. Twelve stop the build; four only warn.
+
+| Layer | Stops the build | Warns |
+|---|---|---|
+| `stg` | a source with no rows, a key twice, a company code that isn't nine digits, an IĮ owner's name showing, Sodra over three months old, a label that can't be read | a Google search whose list came back empty, or full and so maybe cut short |
+| `int` | no places in scope, no company with an address in the city, a key twice | a place whose address has no street or no house number, a brand two companies share, a label for a link the rules no longer make |
+| `mart` | a key twice, a lead that isn't busy with both gaps, a held company without a reason | |
+
+Beside the three layers, `ref` holds the settings from `config.py` as tables, and `meta` records
+each month built, with its git commit, and every check's result. `stg.source_files` lists the raw
+files behind each snapshot, so the app can show where a number came from.
 
 ### The data
 
