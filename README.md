@@ -73,6 +73,107 @@ data-quality checks along the way. If a blocking check fails, the new warehouse 
 The same snapshot always gives the same list. A test rebuilds October and compares it byte for
 byte.
 
+### Architecture and stack
+
+What runs where, and the tools each step uses:
+
+```mermaid
+flowchart TB
+    subgraph SRC["Sources · online"]
+        direction LR
+        JAR["<b>Register (JAR)</b><br/>CSV over HTTPS"] ~~~ SODRA["<b>Sodra</b><br/>zipped CSV over HTTPS"] ~~~ VMI["<b>VMI</b><br/>JSON from data.gov.lt"] ~~~ GMAPS["<b>Google Maps</b><br/>rendered by Oxylabs Web API"]
+    end
+
+    subgraph RT["Python 3.12 + uv · the leads CLI (Typer) · in Docker Compose or locally"]
+        direction TB
+        subgraph COL["leads collect · once a month, needs the Oxylabs key"]
+            direction LR
+            CURL["<b>curl_cffi</b><br/>downloads, with retries"] ~~~ SELECT["<b>selectolax</b><br/>parses Google's HTML"] ~~~ DUCK1["<b>DuckDB</b><br/>writes Parquet + SHA-256 manifests"]
+        end
+
+        subgraph FILES["Files on disk"]
+            direction LR
+            RAW[("<b>data/raw</b><br/>raw files, local only")] ~~~ SNAP[("<b>data/snapshots</b><br/>Parquet, in git")] ~~~ LABELS[("<b>data/labels</b><br/>hand labels, CSV")]
+        end
+
+        subgraph BUILD["leads build · the pipeline service · offline"]
+            direction LR
+            DUCK2["<b>DuckDB</b><br/>one file, no server"] ~~~ MODELS["<b>SQL models</b><br/>sql/stg · int · mart"] ~~~ CHECKS["<b>SQL checks</b><br/>sql/dq · 16"]
+        end
+
+        subgraph SERVE["Outputs and the app"]
+            direction LR
+            WH[("<b>warehouse/leads.duckdb</b><br/>one file per build")] ~~~ CSV["<b>output/month/leads.csv</b><br/>the lead list"] ~~~ APP["<b>Streamlit app</b><br/>the app service, read-only<br/>localhost:8501"]
+        end
+    end
+
+    CI["<b>GitHub Actions</b><br/>lint, tests and a full build"]
+
+    SRC -->|HTTPS| RT
+    COL --> FILES
+    FILES -->|read directly, no load step| BUILD
+    BUILD -->|published only if every check passes| SERVE
+    CI -.->|on every push| RT
+```
+
+### Design
+
+Every table in the warehouse and where its rows come from. Each layer is built from the one above
+it. Solid arrows carry rows; dashed ones carry settings from `config.py`.
+
+```mermaid
+flowchart TB
+    subgraph IN["collect · once a month"]
+        direction LR
+        SRC["Register · Sodra · VMI<br/>Google Maps via Oxylabs"] --> RAW[("data/raw<br/>raw files, not in git")] --> SNAP[("data/snapshots/month<br/>Parquet + SHA-256 manifests")]
+    end
+    LAB[("data/labels<br/>match_labels.csv")]
+    CFG["config.py<br/>categories, legal forms, city, limits"]
+
+    subgraph WH["build: warehouse/leads.duckdb, rebuilt from zero"]
+        REF["ref<br/>config.py as tables"]
+        subgraph STG["stg · the sources, typed · 7 checks"]
+            direction LR
+            source_files ~~~ jar_entities ~~~ sodra_monthly
+            vmi_taxes ~~~ google_listings ~~~ match_labels
+        end
+        subgraph INT["int · places matched to companies · 6 checks"]
+            direction LR
+            key_words --> companies & places --> candidates --> links
+            rules --> candidates
+        end
+        subgraph MART["mart · 3 checks"]
+            subgraph MS["scoring and the lead list"]
+                direction LR
+                company_facts --> scores --> leads --> leads_export
+                scores --> category_summary & sensitivity & month_over_month
+            end
+            subgraph MQ["matching quality"]
+                direction LR
+                review_queue ~~~ match_precision
+            end
+        end
+        META["meta<br/>one row per run and per check"]
+    end
+
+    CSV["output/month/leads.csv"]
+    APP["Streamlit app, read-only"]
+
+    IN --> STG
+    LAB --> STG
+    CFG --> REF
+    STG --> INT
+    INT -->|automatic links| MS
+    INT -->|links to review| MQ
+    STG -->|staff, tax| MS
+    STG -->|labels| MQ
+    REF -.->|settings| INT & MART
+    MS --> CSV
+    MS & MQ --> APP
+    META -->|runs and checks| APP
+```
+
+
 ### The data
 
 | Source | What we take |
